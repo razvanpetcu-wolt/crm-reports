@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Engagement Report — ALB & XKX · Apr–Jul 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --alb: #2a78d6;
+    --xkx: #1baf7a;
+    --unsub: #eda100;
+    --danger: #e34948;
+    --success: #0ca30c;
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --surface-2: #f2f1ee;
+    --text: #0b0b0b;
+    --text-2: #52514e;
+    --text-3: #898781;
+    --border: rgba(11,11,11,0.10);
+    --border-strong: rgba(11,11,11,0.18);
+    --radius: 8px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 2rem 4rem;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border-strong);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: .4rem;
+  }
+
+  h1 {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -.02em;
+    color: var(--text);
+    margin-bottom: .3rem;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--text-2);
+  }
+
+  .country-dots {
+    display: flex;
+    gap: 16px;
+    margin-top: 1rem;
+    font-size: 13px;
+    color: var(--text-2);
+  }
+
+  .country-dots span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  section { margin-bottom: 2.5rem; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: .75rem;
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .kpi-label {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-bottom: 5px;
+  }
+
+  .kpi-value {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -.02em;
+  }
+
+  .kpi-sub {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 3px;
+  }
+
+  .kpi.alb-accent { border-left: 3px solid var(--alb); }
+  .kpi.xkx-accent { border-left: 3px solid var(--xkx); }
+
+  .reach-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 1.5rem;
+  }
+
+  .reach-channel-label {
+    font-size: 12px;
+    color: var(--text-2);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .reach-row { margin-bottom: 8px; }
+
+  .reach-country {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-bottom: 3px;
+  }
+
+  .reach-bar-outer {
+    background: var(--surface-2);
+    border-radius: 4px;
+    height: 22px;
+    overflow: hidden;
+  }
+
+  .reach-bar-inner {
+    height: 100%;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    transition: width .6s ease;
+  }
+
+  .chart-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 20px 16px;
+    margin-bottom: 16px;
+  }
+
+  .chart-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .chart-desc {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-bottom: 12px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--text-2);
+  }
+
+  .legend span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .lsq {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .insight-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .insight {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .itag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+
+  .tag-s { background: #eaf3de; color: #3b6d11; }
+  .tag-w { background: #faeeda; color: #854f0b; }
+  .tag-d { background: #fcebeb; color: #a32d2d; }
+  .tag-n { background: var(--surface-2); color: var(--text-2); }
+
+  .ibody {
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.55;
+  }
+
+  .alert-box {
+    background: #fcebeb;
+    border: 1px solid #f09595;
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #a32d2d;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2rem 0;
+  }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 1.25rem;
+    font-size: 12px;
+    color: var(--text-3);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  @media (max-width: 600px) {
+    .two-col, .insight-grid, .reach-grid { grid-template-columns: 1fr; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    h1 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">CRM Performance Report</div>
+    <h1>Engagement Overview — ALB &amp; XKX</h1>
+    <div class="subtitle">Apr – Jul 2026 &nbsp;·&nbsp; Email and push channel performance</div>
+    <div class="country-dots">
+      <span><span class="dot" style="background:var(--alb)"></span>Albania (ALB)</span>
+      <span><span class="dot" style="background:var(--xkx)"></span>Kosovo (XKX)</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="section-label">Key metrics at a glance</div>
+    <div class="kpi-grid">
+      <div class="kpi alb-accent">
+        <div class="kpi-label">ALB peak email send</div>
+        <div class="kpi-value">104,230</div>
+        <div class="kpi-sub">week of Jul 6</div>
+      </div>
+      <div class="kpi xkx-accent">
+        <div class="kpi-label">XKX peak email send</div>
+        <div class="kpi-value">39,056</div>
+        <div class="kpi-sub">week of Jun 8</div>
+      </div>
+      <div class="kpi alb-accent">
+        <div class="kpi-label">ALB peak push delivered</div>
+        <div class="kpi-value">154,411</div>
+        <div class="kpi-sub">week of Jun 22</div>
+      </div>
+      <div class="kpi xkx-accent">
+        <div class="kpi-label">XKX peak push delivered</div>
+        <div class="kpi-value">96,474</div>
+        <div class="kpi-sub">week of Jun 22</div>
+      </div>
+      <div class="kpi alb-accent">
+        <div class="kpi-label">ALB email open rate</div>
+        <div class="kpi-value">44–60%</div>
+        <div class="kpi-sub">stable range</div>
+      </div>
+      <div class="kpi xkx-accent">
+        <div class="kpi-label">XKX email open rate</div>
+        <div class="kpi-value">25–47%</div>
+        <div class="kpi-sub">wider variance</div>
+      </div>
+      <div class="kpi alb-accent">
+        <div class="kpi-label">ALB push open rate</div>
+        <div class="kpi-value">up to 2.64%</div>
+        <div class="kpi-sub">peak Jul 6, range 0.33–2.64%</div>
+      </div>
+      <div class="kpi xkx-accent">
+        <div class="kpi-label">XKX push open rate</div>
+        <div class="kpi-value">up to 1.4%</div>
+        <div class="kpi-sub">improving from April</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">Reachable audience</div>
+    <div class="reach-grid">
+      <div>
+        <div class="reach-channel-label">✉ Can reach by email</div>
+        <div class="reach-row">
+          <div class="reach-country">XKX</div>
+          <div class="reach-bar-outer"><div class="reach-bar-inner" style="width:88%;background:var(--alb)">44.3%</div></div>
+        </div>
+        <div class="reach-row">
+          <div class="reach-country">ALB</div>
+          <div class="reach-bar-outer"><div class="reach-bar-inner" style="width:86%;background:#6aaae8">43.0%</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="reach-channel-label">🔔 Can reach by push</div>
+        <div class="reach-row">
+          <div class="reach-country">XKX</div>
+          <div class="reach-bar-outer"><div class="reach-bar-inner" style="width:96%;background:var(--xkx)">48.4%</div></div>
+        </div>
+        <div class="reach-row">
+          <div class="reach-country">ALB</div>
+          <div class="reach-bar-outer"><div class="reach-bar-inner" style="width:100%;background:#12cc8a">50.2%</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <section>
+    <div class="section-label">Email performance</div>
+    <div class="chart-block">
+      <div class="chart-title">Email — open rate — weekly</div>
+      <div class="chart-desc">ALB holds a tighter, stronger band. XKX shows more variance but improving trend into July.</div>
+      <div class="legend">
+        <span><span class="lsq" style="background:var(--alb)"></span>ALB</span>
+        <span><span class="lsq" style="background:var(--xkx)"></span>XKX</span>
+      </div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="emailOpenChart" role="img" aria-label="Weekly email open rate ALB vs XKX">Email open rate comparison Apr-Jul 2026.</canvas>
+      </div>
+    </div>
+    <div class="chart-block">
+      <div class="chart-title">Email — messages sent — weekly volume</div>
+      <div class="chart-desc">ALB peaks at 104K in July with a strong Jun 8 spike at 97K. XKX peaked at 39K in June with a second spike at 25K in late June.</div>
+      <div class="legend">
+        <span><span class="lsq" style="background:var(--alb)"></span>ALB</span>
+        <span><span class="lsq" style="background:var(--xkx)"></span>XKX</span>
+      </div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="emailVolChart" role="img" aria-label="Weekly email volume ALB vs XKX">Email volume comparison Apr-Jul 2026.</canvas>
+      </div>
+    </div>
+    <div class="chart-block">
+      <div class="chart-title">Email — unsubscribe rate — weekly</div>
+      <div class="chart-desc">XKX started at 0.6% in April — well above the 0.2% industry threshold — but has improved significantly to ~0.1% by July. ALB stays consistently below 0.06%.</div>
+      <div class="legend">
+        <span><span class="lsq" style="background:var(--alb)"></span>ALB</span>
+        <span><span class="lsq" style="background:var(--unsub)"></span>XKX</span>
+      </div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="unsubChart" role="img" aria-label="Weekly email unsub rate ALB vs XKX">Unsub rate comparison Apr-Jul 2026.</canvas>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <section>
+    <div class="section-label">Push performance</div>
+    <div class="chart-block">
+      <div class="chart-title">Push — open rate — weekly</div>
+      <div class="chart-desc">ALB push open rates range from 0.33% to 2.64%, with strong spikes in early April and July. XKX peaks at 1.4% but stays mostly below 1%.</div>
+      <div class="legend">
+        <span><span class="lsq" style="background:var(--alb)"></span>ALB</span>
+        <span><span class="lsq" style="background:var(--xkx)"></span>XKX</span>
+      </div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="pushOpenChart" role="img" aria-label="Weekly push open rate ALB vs XKX">Push open rate comparison Apr-Jul 2026.</canvas>
+      </div>
+    </div>
+    <div class="chart-block">
+      <div class="chart-title">Push — messages delivered — weekly volume</div>
+      <div class="chart-desc">ALB peaked at 154K in late June (Jun 22). XKX reached 96K in the same week, a major ramp-up from under 1K in early May.</div>
+      <div class="legend">
+        <span><span class="lsq" style="background:var(--alb)"></span>ALB</span>
+        <span><span class="lsq" style="background:var(--xkx)"></span>XKX</span>
+      </div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="pushVolChart" role="img" aria-label="Weekly push volume ALB vs XKX">Push volume comparison Apr-Jul 2026.</canvas>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <section>
+    <div class="section-label">Executive summary</div>
+    <div class="insight-grid">
+      <div class="insight">
+        <div class="itag tag-s">ALB email — strong and growing</div>
+        <div class="ibody">Volume grew to 104K by July with notable spikes at Jun 8 (97K) and Jun 29 (97K). Open rates holding at 44–60%. The most reliable and scalable channel in the market.</div>
+      </div>
+      <div class="insight">
+        <div class="itag tag-s">XKX email — volume recovering</div>
+        <div class="ibody">Volume peaked at 39K in June after a slow April start. Open rates (25–47%) are lower than ALB but showing improvement into July.</div>
+      </div>
+      <div class="insight">
+        <div class="itag tag-s">ALB push — high reach and engagement</div>
+        <div class="ibody">Delivered 154K at peak with open rates ranging 0.33–2.64%. Strong spikes in April and July signal high receptivity around campaign moments. Consistently outperforms XKX push.</div>
+      </div>
+      <div class="insight">
+        <div class="itag tag-w">XKX push — reach without engagement</div>
+        <div class="ibody">Despite reaching 96K at peak, push open rates stay mostly below 1%. Volume is growing but click-through optimisation is needed.</div>
+      </div>
+      <div class="insight">
+        <div class="itag tag-w">XKX unsub — improving but monitor</div>
+        <div class="ibody">Started April at 0.6% — above the 0.2% threshold. Declining to ~0.1% by July is a positive trend. Audience health is improving but requires ongoing monitoring.</div>
+      </div>
+      <div class="insight">
+        <div class="itag tag-n">CTR gap — both markets</div>
+        <div class="ibody">Email CTR stays below 1% in both markets despite strong open rates. Content is generating interest but not converting to clicks. A CTA and creative review is recommended.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>CRM Engagement Report · ALB &amp; XKX · Apr–Jul 2026</span>
+    <span>Generated Jul 9, 2026</span>
+  </footer>
+
+</div>
+
+<script>
+const weeks = ['Apr 6','Apr 13','Apr 20','Apr 27','May 4','May 11','May 18','May 25','Jun 1','Jun 8','Jun 15','Jun 22','Jun 29','Jul 6'];
+
+const albEmailOpen = [null,58.2,null,47.8,48.1,47.4,null,45.8,48.7,52.6,60.7,56.4,47.6,44.4];
+const xkxEmailOpen = [null,47.4,null,35.9,40.1,25.1,null,24.5,null,27.8,30.4,26.1,36.7,23.4];
+const albEmailSent = [5265,40340,23412,64024,58468,59155,65496,60295,42574,97866,53326,56474,97188,104230];
+const xkxEmailSent = [578,3155,20813,4172,9993,2264,11492,10282,3853,39056,20477,25986,8363,23154];
+const albPushOpen = [2.39,0.74,0.75,0.48,0.67,0.82,0.75,0.33,1.23,0.74,1.04,0.47,0.80,2.64];
+const xkxPushOpen = [0.68,null,null,0.49,0.40,0.17,null,0.29,null,null,0.79,null,1.03,0.57];
+const albPushVol = [5526,90141,70997,91564,47702,41950,37783,74614,33311,112803,53673,154411,111157,10460];
+const xkxPushVol = [294,5857,20767,35114,1241,1169,6168,15228,6514,54401,15232,96474,48959,69297];
+const albUnsub = [null,0.06,null,0.04,0.03,0.03,null,0.04,0.03,0.03,0.02,0.04,0.03,0.02];
+const xkxUnsub = [null,0.60,null,0.10,0.14,0.10,null,0.10,0.08,0.14,0.12,0.10,0.12,0.10];
+
+const grid = '#e8e7e4';
+const muted = '#898781';
+
+const lineOpts = (pct) => ({
+  responsive:true, maintainAspectRatio:false,
+  interaction:{mode:'index',intersect:false},
+  plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
+    if(ctx.raw===null||ctx.raw===undefined) return null;
+    return ` ${ctx.dataset.label}: ${pct ? ctx.raw.toFixed(2)+'%' : Number(ctx.raw).toLocaleString()}`;
+  }}}},
+  scales:{
+    x:{ticks:{color:muted,font:{size:11},maxRotation:45},grid:{color:grid}},
+    y:{ticks:{color:muted,font:{size:11},callback:v=>pct?v+'%':Number(v).toLocaleString()},grid:{color:grid}}
+  }
+});
+
+new Chart(document.getElementById('emailOpenChart'),{type:'line',data:{labels:weeks,datasets:[
+  {label:'ALB',data:albEmailOpen,borderColor:'#2a78d6',borderWidth:2,pointRadius:3,tension:0.3,spanGaps:true},
+  {label:'XKX',data:xkxEmailOpen,borderColor:'#1baf7a',borderWidth:2,pointRadius:3,tension:0.3,spanGaps:true,borderDash:[5,3]}
+]},options:lineOpts(true)});
+
+new Chart(document.getElementById('emailVolChart'),{type:'bar',data:{labels:weeks,datasets:[
+  {label:'ALB',data:albEmailSent,backgroundColor:'#2a78d622',borderColor:'#2a78d6',borderWidth:1,borderRadius:3},
+  {label:'XKX',data:xkxEmailSent,backgroundColor:'#1baf7a22',borderColor:'#1baf7a',borderWidth:1,borderRadius:3}
+]},options:lineOpts(false)});
+
+new Chart(document.getElementById('unsubChart'),{type:'line',data:{labels:weeks,datasets:[
+  {label:'ALB',data:albUnsub,borderColor:'#2a78d6',borderWidth:2,pointRadius:3,tension:0.3,spanGaps:true},
+  {label:'XKX',data:xkxUnsub,borderColor:'#eda100',borderWidth:2,pointRadius:3,tension:0.3,spanGaps:true,borderDash:[5,3]}
+]},options:lineOpts(true)});
+
+new Chart(document.getElementById('pushOpenChart'),{type:'line',data:{labels:weeks,datasets:[
+  {label:'ALB',data:albPushOpen,borderColor:'#2a78d6',borderWidth:2,pointRadius:3,tension:0.3,spanGaps:true},
+  {label:'XKX',data:xkxPushOpen,borderColor:'#1baf7a',borderWidth:2,pointRadius:3,tension:0.3,spanGaps:true,borderDash:[5,3]}
+]},options:lineOpts(true)});
+
+new Chart(document.getElementById('pushVolChart'),{type:'bar',data:{labels:weeks,datasets:[
+  {label:'ALB',data:albPushVol,backgroundColor:'#2a78d622',borderColor:'#2a78d6',borderWidth:1,borderRadius:3},
+  {label:'XKX',data:xkxPushVol,backgroundColor:'#1baf7a22',borderColor:'#1baf7a',borderWidth:1,borderRadius:3}
+]},options:lineOpts(false)});
+</script>
+</body>
+</html>
