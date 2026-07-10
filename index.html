@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Reports — ALB & XKX</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    background: #f7f7f5;
+    color: #0b0b0b;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  .container { max-width: 600px; width: 100%; }
+  .eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #898781; margin-bottom: .5rem; }
+  h1 { font-size: 28px; font-weight: 600; letter-spacing: -.02em; margin-bottom: .4rem; }
+  .subtitle { font-size: 14px; color: #52514e; margin-bottom: 2.5rem; }
+  .card {
+    background: #fff;
+    border: 1px solid rgba(11,11,11,0.10);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+    text-decoration: none;
+    display: block;
+    transition: box-shadow .15s ease, transform .15s ease;
+  }
+  .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-1px); }
+  .card-eyebrow { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #898781; margin-bottom: 6px; }
+  .card-title { font-size: 17px; font-weight: 600; color: #0b0b0b; margin-bottom: 5px; }
+  .card-desc { font-size: 13px; color: #52514e; line-height: 1.5; }
+  .card-arrow { float: right; font-size: 18px; color: #898781; margin-top: -24px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 10px; }
+  .tag-blue { background: #deeaf9; color: #1a4f8a; }
+  .tag-green { background: #eaf3de; color: #3b6d11; }
+  footer { margin-top: 2rem; font-size: 12px; color: #898781; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="eyebrow">CRM Performance · ALB &amp; XKX</div>
+  <h1>Reports Dashboard</h1>
+  <div class="subtitle">Apr – Jul 2026 · Select a report to view</div>
+
+  <a class="card" href="crm_engagement_report.html">
+    <div class="card-eyebrow">Email &amp; Push</div>
+    <div class="card-title">Engagement Overview</div>
+    <div class="card-desc">Weekly email and push performance for ALB and XKX — open rates, CTR, volume, unsub rates and reachable audience comparison.</div>
+    <span class="card-arrow">→</span>
+    <div><span class="tag tag-blue">Apr – Jul 2026</span></div>
+  </a>
+
+  <a class="card" href="crm_incrementality_report.html">
+    <div class="card-eyebrow">Incrementality</div>
+    <div class="card-title">Campaign Incrementality</div>
+    <div class="card-desc">Treatment vs. control results for FIFA non-rights and Gjilan city launch campaigns — incremental GOV, volume, and active users by period.</div>
+    <span class="card-arrow">→</span>
+    <div><span class="tag tag-green">Week of Jun 29, 2026</span></div>
+  </a>
+
+  <a class="card" href="weekly_meeting.html">
+    <div class="card-eyebrow">Weekly Meeting</div>
+    <div class="card-title">Performance Update Template</div>
+    <div class="card-desc">Weekly meeting template with highlights, lowlights, next week plan, and action item tracker — accumulates week by week.</div>
+    <span class="card-arrow">→</span>
+    <div><span class="tag" style="background:#ede9fe;color:#5b21b6">ALB & XKX</span></div>
+  </a>
+
+  <footer>razvanpetcu-wolt · Generated Jul 9, 2026</footer>
+</div>
+</body>
+</html>
