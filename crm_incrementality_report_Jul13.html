@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -67,6 +68,7 @@
   .metric-box-value.neg { color: var(--neg-text); }
   .metric-box-value.neu { color: var(--text-2); }
   .metric-box-period { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .metric-box-note { font-size: 10px; color: var(--text-3); margin-top: 4px; line-height: 1.4; font-style: italic; }
   .chart-block { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 18px 14px; margin-bottom: 14px; }
   .chart-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
   .chart-desc { font-size: 12px; color: var(--text-3); margin-bottom: 12px; }
@@ -132,11 +134,14 @@
   <!-- WEEK KPIs -->
   <section>
     <div class="section-label">Week summary</div>
-    <div class="kpi-grid">
+
+    <!-- Combined totals -->
+    <div style="font-size:11px;font-weight:500;color:var(--text-3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Combined — ALB + XKX</div>
+    <div class="kpi-grid" style="margin-bottom:1.5rem">
       <div class="kpi pos">
         <div class="kpi-label">Combined inc. GOV</div>
         <div class="kpi-value pos">+€3,376</div>
-        <div class="kpi-sub">3 included campaigns</div>
+        <div class="kpi-sub">all 4 campaigns</div>
       </div>
       <div class="kpi pos">
         <div class="kpi-label">Combined inc. volume</div>
@@ -153,26 +158,55 @@
         <div class="kpi-value neu">443,652</div>
         <div class="kpi-sub">treatment group</div>
       </div>
-      <div class="kpi neg">
-        <div class="kpi-label">Visa ALB in-campaign GOV</div>
-        <div class="kpi-value neg">-€2,433</div>
-        <div class="kpi-sub">negative, new Cx positive</div>
+    </div>
+
+    <!-- Per country split -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+      <!-- ALB -->
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--alb);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;padding-bottom:4px;border-bottom:2px solid var(--alb)">Albania (ALB)</div>
+        <div style="display:grid;gap:8px">
+          <div class="kpi neg alb">
+            <div class="kpi-label">Visa — inc. GOV</div>
+            <div class="kpi-value neg">-€2,433</div>
+            <div class="kpi-sub">In campaign · 270,834 exposed</div>
+          </div>
+          <div class="kpi neg">
+            <div class="kpi-label">Visa — inc. volume</div>
+            <div class="kpi-value neg">-11</div>
+            <div class="kpi-sub">incremental orders</div>
+          </div>
+          <div class="kpi pos">
+            <div class="kpi-label">Visa — inc. new Cx</div>
+            <div class="kpi-value pos">+52</div>
+            <div class="kpi-sub">only positive signal</div>
+          </div>
+        </div>
       </div>
-      <div class="kpi pos">
-        <div class="kpi-label">Visa XKX in-campaign GOV</div>
-        <div class="kpi-value pos">+€2,680</div>
-        <div class="kpi-sub">best volume driver</div>
+
+      <!-- XKX -->
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--xkx);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;padding-bottom:4px;border-bottom:2px solid var(--xkx)">Kosovo (XKX)</div>
+        <div style="display:grid;gap:8px">
+          <div class="kpi pos">
+            <div class="kpi-label">Visa — inc. GOV</div>
+            <div class="kpi-value pos">+€2,680</div>
+            <div class="kpi-sub">In campaign · 153,917 exposed</div>
+          </div>
+          <div class="kpi pos">
+            <div class="kpi-label">Spar — inc. GOV</div>
+            <div class="kpi-value pos">+€2,056</div>
+            <div class="kpi-sub">In campaign · 17,640 exposed</div>
+          </div>
+          <div class="kpi pos">
+            <div class="kpi-label">Gjilan — inc. GOV</div>
+            <div class="kpi-value pos">+€1,073</div>
+            <div class="kpi-sub">Post 28d · 1,261 exposed</div>
+          </div>
+        </div>
       </div>
-      <div class="kpi pos">
-        <div class="kpi-label">Spar XKX in-campaign GOV</div>
-        <div class="kpi-value pos">+€2,056</div>
-        <div class="kpi-sub">highest GOV per user</div>
-      </div>
-      <div class="kpi pos">
-        <div class="kpi-label">Gjilan post-28d GOV</div>
-        <div class="kpi-value pos">+€1,073</div>
-        <div class="kpi-sub">sustained positive</div>
-      </div>
+
     </div>
   </section>
 
@@ -212,21 +246,25 @@
           <div class="metric-box-label">Inc. GOV</div>
           <div class="metric-box-value neg">-€2,433</div>
           <div class="metric-box-period">In campaign</div>
+          <div class="metric-box-note">Likely impacted by in-app send running in parallel — not trackable incrementally</div>
         </div>
         <div class="metric-box">
           <div class="metric-box-label">Inc. volume</div>
           <div class="metric-box-value neg">-11</div>
           <div class="metric-box-period">In campaign</div>
+          <div class="metric-box-note">Marginal order loss — cannibalisation from in-app channel</div>
         </div>
         <div class="metric-box">
           <div class="metric-box-label">Inc. active users</div>
           <div class="metric-box-value neg">-85</div>
           <div class="metric-box-period">In campaign</div>
+          <div class="metric-box-note">Existing users slightly displaced during campaign window</div>
         </div>
         <div class="metric-box">
           <div class="metric-box-label">Inc. new Cx</div>
           <div class="metric-box-value pos">+52</div>
           <div class="metric-box-period">In campaign</div>
+          <div class="metric-box-note">Positive signal — campaign is attracting new customers despite overall negative GOV</div>
         </div>
       </div>
     </div>
@@ -252,21 +290,25 @@
           <div class="metric-box-label">Inc. GOV</div>
           <div class="metric-box-value pos">+€2,680</div>
           <div class="metric-box-period">In campaign</div>
+          <div class="metric-box-note">Strong result — campaign generated real incremental revenue above organic baseline</div>
         </div>
         <div class="metric-box">
           <div class="metric-box-label">Inc. volume</div>
           <div class="metric-box-value pos">+573</div>
           <div class="metric-box-period">In campaign</div>
+          <div class="metric-box-note">High order uplift — CRM drove meaningful additional transactions</div>
         </div>
         <div class="metric-box">
           <div class="metric-box-label">Inc. active users</div>
           <div class="metric-box-value pos">+457</div>
           <div class="metric-box-period">In campaign</div>
+          <div class="metric-box-note">Campaign reactivated a significant number of users who wouldn't have ordered otherwise</div>
         </div>
         <div class="metric-box">
           <div class="metric-box-label">Inc. new Cx</div>
           <div class="metric-box-value neg">-114</div>
           <div class="metric-box-period">In campaign</div>
+          <div class="metric-box-note">Negative new Cx is expected — campaign targeted existing users, not acquisition</div>
         </div>
       </div>
     </div>
@@ -284,21 +326,25 @@
           <div class="metric-box-label">Inc. GOV</div>
           <div class="metric-box-value pos">+€2,056</div>
           <div class="metric-box-period">In campaign</div>
+          <div class="metric-box-note">Highest GOV per exposed user this week — very efficient push campaign</div>
         </div>
         <div class="metric-box">
           <div class="metric-box-label">Inc. volume</div>
           <div class="metric-box-value pos">+181</div>
           <div class="metric-box-period">In campaign</div>
+          <div class="metric-box-note">Strong order uplift from a small audience — high conversion rate</div>
         </div>
         <div class="metric-box">
           <div class="metric-box-label">Inc. active users</div>
           <div class="metric-box-value pos">+141</div>
           <div class="metric-box-period">In campaign</div>
+          <div class="metric-box-note">Push notification effectively reactivated dormant or low-frequency users</div>
         </div>
         <div class="metric-box">
           <div class="metric-box-label">Inc. new Cx</div>
           <div class="metric-box-value neu">0</div>
           <div class="metric-box-period">In campaign</div>
+          <div class="metric-box-note">Targeted non-grocery users but no net new Cx acquired — likely converting users already close to organic conversion</div>
         </div>
       </div>
     </div>
@@ -316,21 +362,25 @@
           <div class="metric-box-label">Inc. GOV</div>
           <div class="metric-box-value pos">+€1,073</div>
           <div class="metric-box-period">Post 28 days</div>
+          <div class="metric-box-note">Sustained GOV 28 days post-launch — city launch impact holding strong</div>
         </div>
         <div class="metric-box">
           <div class="metric-box-label">Inc. volume</div>
           <div class="metric-box-value pos">+53</div>
           <div class="metric-box-period">Post 28 days</div>
+          <div class="metric-box-note">Orders still being driven 4 weeks after the push — strong retention signal</div>
         </div>
         <div class="metric-box">
           <div class="metric-box-label">Inc. active users</div>
           <div class="metric-box-value pos">+6</div>
           <div class="metric-box-period">Post 28 days</div>
+          <div class="metric-box-note">Small but positive — a handful of users remain incrementally active vs control</div>
         </div>
         <div class="metric-box">
           <div class="metric-box-label">Inc. new Cx</div>
           <div class="metric-box-value neg">-16</div>
           <div class="metric-box-period">Post 28 days</div>
+          <div class="metric-box-note">Slight negative at post-28d — new Cx acquisition was stronger at launch, now normalising</div>
         </div>
       </div>
     </div>
