@@ -237,31 +237,42 @@
 
   <!-- DASHBOARDS TAB -->
   <div id="tab-dashboards" class="hidden">
-    <div class="section-label">Latest reports — Week of Jul 6, 2026</div>
-    <div class="dash-grid">
-      <a class="dash-card" href="crm_engagement_report.html" target="_blank">
-        <div class="dash-card-eyebrow">Email & Push</div>
-        <div class="dash-card-title">Engagement Overview</div>
-        <div class="dash-card-desc">Weekly email and push performance for ALB and XKX — open rates, CTR, volume, unsub rates. Apr–Jul 2026.</div>
-        <div class="dash-arrow">→</div>
-      </a>
-      <a class="dash-card" href="crm_incrementality_report_Jul13.html" target="_blank">
-        <div class="dash-card-eyebrow">Incrementality · Latest</div>
-        <div class="dash-card-title">Campaign Incrementality</div>
-        <div class="dash-card-desc">Visa, Spar and Gjilan campaigns — incremental GOV, volume and active users. Split by ALB and XKX.</div>
-        <div class="dash-arrow">→</div>
-      </a>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+      <div class="section-label" style="margin:0">Latest reports</div>
+      <button class="btn btn-secondary btn-small" onclick="document.getElementById('add-report-form').classList.toggle('hidden')">+ Add report</button>
     </div>
 
-    <div class="section-label" style="margin-top:1.5rem">Archive</div>
-    <div class="dash-grid">
-      <a class="dash-card" href="crm_incrementality_report.html" target="_blank" style="opacity:.55">
-        <div class="dash-card-eyebrow">Incrementality · Jun 29, 2026</div>
-        <div class="dash-card-title">Campaign Incrementality</div>
-        <div class="dash-card-desc">FIFA non-rights and Gjilan city launch campaigns — incremental GOV, volume and active users.</div>
-        <div class="dash-arrow">→</div>
-      </a>
+    <!-- Add report form -->
+    <div id="add-report-form" class="hidden" style="background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--radius);padding:14px;margin-bottom:1rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">Report name</label>
+          <input type="text" id="rpt-name" placeholder="e.g. Campaign Incrementality" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;background:var(--surface);color:var(--text)">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">Type</label>
+          <select id="rpt-type" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;background:var(--surface);color:var(--text)">
+            <option value="Incrementality">Incrementality</option>
+            <option value="Email & Push">Email & Push</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">URL</label>
+          <input type="text" id="rpt-url" placeholder="https://razvanpetcu-wolt.github.io/crm-reports/..." style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;background:var(--surface);color:var(--text)">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">Week of</label>
+          <input type="date" id="rpt-date" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;background:var(--surface);color:var(--text)">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-secondary btn-small" onclick="document.getElementById('add-report-form').classList.add('hidden')">Cancel</button>
+        <button class="btn btn-primary btn-small" onclick="addReport()">Add report</button>
+      </div>
     </div>
+
+    <div id="reports-list"></div>
   </div>
 
   <!-- HISTORY TAB -->
@@ -289,6 +300,7 @@ const API = 'https://script.google.com/a/macros/wolt.com/s/AKfycbxOiBnIA0MNGJ3Gw
 let currentWeek = '';
 let actionItems = [];
 let weeks = {};
+let reports = [];
 
 window.onload = async () => {
   const today = new Date();
@@ -297,25 +309,123 @@ window.onload = async () => {
   const monday = new Date(today); monday.setDate(diff);
   currentWeek = monday.toISOString().split('T')[0];
   document.getElementById('weekDate').value = currentWeek;
+  document.getElementById('rpt-date').value = currentWeek;
   showStatus('Loading data...', false);
   await fetchAll();
   loadWeek();
   renderActionItems('all');
   renderHistory();
+  renderReports();
   showStatus('', false);
 };
 
 async function fetchAll() {
   try {
-    const [weeksRes, actionsRes] = await Promise.all([
+    const [weeksRes, actionsRes, reportsRes] = await Promise.all([
       fetch(`${API}?action=getWeeks`).then(r => r.json()),
-      fetch(`${API}?action=getActions`).then(r => r.json())
+      fetch(`${API}?action=getActions`).then(r => r.json()),
+      fetch(`${API}?action=getReports`).then(r => r.json())
     ]);
     if (weeksRes.success) weeks = weeksRes.weeks;
     if (actionsRes.success) actionItems = actionsRes.actions;
+    if (reportsRes.success) reports = reportsRes.reports;
+    else reports = getDefaultReports();
   } catch(e) {
     showStatus('Could not load data from Google Sheets', false);
+    reports = getDefaultReports();
   }
+}
+
+function getDefaultReports() {
+  return [
+    { id: 1, name: 'Campaign Incrementality', type: 'Incrementality', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_incrementality_report_Jul13.html', date: '2026-07-13' },
+    { id: 2, name: 'Engagement Overview', type: 'Email & Push', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_engagement_report.html', date: '2026-07-13' },
+    { id: 3, name: 'Campaign Incrementality', type: 'Incrementality', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_incrementality_report.html', date: '2026-06-29' }
+  ];
+}
+
+async function addReport() {
+  const name = document.getElementById('rpt-name').value.trim();
+  const type = document.getElementById('rpt-type').value;
+  const url = document.getElementById('rpt-url').value.trim();
+  const date = document.getElementById('rpt-date').value;
+  if (!name || !url || !date) { showStatus('Please fill in all fields', false); return; }
+  const report = { id: Date.now(), name, type, url, date };
+  try {
+    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'saveReport', ...report }) });
+    reports.push(report);
+    document.getElementById('rpt-name').value = '';
+    document.getElementById('rpt-url').value = '';
+    document.getElementById('add-report-form').classList.add('hidden');
+    renderReports();
+    showStatus('Report added', true);
+    setTimeout(() => showStatus('', false), 2000);
+  } catch(e) {
+    // Save failed, still add locally
+    reports.push(report);
+    renderReports();
+  }
+}
+
+async function deleteReport(id) {
+  if (!confirm('Remove this report?')) return;
+  try {
+    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'deleteReport', id }) });
+  } catch(e) {}
+  reports = reports.filter(r => r.id != id);
+  renderReports();
+}
+
+function renderReports() {
+  const list = document.getElementById('reports-list');
+  if (!reports.length) {
+    list.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-3);font-size:13px">No reports yet. Click "+ Add report" to add one.</div>`;
+    return;
+  }
+  // Sort by date descending
+  const sorted = [...reports].sort((a, b) => b.date.localeCompare(a.date));
+  const latest = sorted[0].date;
+  const latestReports = sorted.filter(r => r.date === latest);
+  const archiveReports = sorted.filter(r => r.date !== latest);
+
+  let html = `<div style="font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Latest · Week of ${formatDate(latest)}</div>`;
+  html += `<div class="dash-grid" style="margin-bottom:1.5rem">`;
+  latestReports.forEach(r => {
+    html += `<div style="position:relative">
+      <a class="dash-card" href="${r.url}" target="_blank">
+        <div class="dash-card-eyebrow">${r.type}</div>
+        <div class="dash-card-title">${r.name}</div>
+        <div class="dash-card-desc">Week of ${formatDate(r.date)}</div>
+        <div class="dash-arrow">→</div>
+      </a>
+      <button onclick="deleteReport(${r.id})" style="position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-3);opacity:.5" title="Remove">✕</button>
+    </div>`;
+  });
+  html += `</div>`;
+
+  if (archiveReports.length) {
+    // Group archive by date
+    const archiveGrouped = {};
+    archiveReports.forEach(r => { if (!archiveGrouped[r.date]) archiveGrouped[r.date] = []; archiveGrouped[r.date].push(r); });
+    html += `<div style="font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Archive</div>`;
+    Object.keys(archiveGrouped).sort((a,b) => b.localeCompare(a)).forEach(date => {
+      html += `<div style="font-size:11px;color:var(--text-3);margin-bottom:6px">${formatDate(date)}</div>`;
+      html += `<div class="dash-grid" style="margin-bottom:1rem;opacity:.55">`;
+      archiveGrouped[date].forEach(r => {
+        html += `<div style="position:relative">
+          <a class="dash-card" href="${r.url}" target="_blank">
+            <div class="dash-card-eyebrow">${r.type}</div>
+            <div class="dash-card-title">${r.name}</div>
+            <div class="dash-card-desc">Week of ${formatDate(r.date)}</div>
+            <div class="dash-arrow">→</div>
+          </a>
+          <button onclick="deleteReport(${r.id})" style="position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-3);opacity:.5" title="Remove">✕</button>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+  }
+  list.innerHTML = html;
 }
 
 function switchTab(tab) {
