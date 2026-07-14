@@ -111,20 +111,32 @@
     </div>
     <div class="insight-grid">
       <div class="insight">
-        <div class="itag tag-d">Visa ALB — negative in-campaign</div>
-        <div class="ibody">Visa ALB shows -€2,433 GOV and -11 incremental orders in-campaign from 270,834 exposed users. The campaign does generate +52 new customers, but at a cost to existing user behaviour. Post 7d results pending.</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px">
+          <div class="itag tag-d">Visa — negative in-campaign</div>
+          <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:#deeaf9;color:#1a4f8a">ALB</span>
+        </div>
+        <div class="ibody">Visa ALB shows -€2,433 GOV and -11 incremental orders in-campaign from 270,834 exposed users. Likely impacted by a parallel in-app send which is not trackable incrementally, creating noise in the measurement. The only positive signal is +52 new customers.</div>
       </div>
       <div class="insight">
-        <div class="itag tag-s">Visa XKX — strong positive in-campaign</div>
-        <div class="ibody">Visa XKX delivers +€2,680 GOV and +573 incremental orders from 153,917 exposed users. Clear contrast with ALB — the same campaign performs very differently across the two markets.</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px">
+          <div class="itag tag-s">Visa — strong positive in-campaign</div>
+          <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:#eaf3de;color:#3b6d11">XKX</span>
+        </div>
+        <div class="ibody">Visa XKX delivers +€2,680 GOV and +573 incremental orders from 153,917 exposed users. Clear contrast with ALB — XKX had email + push (both trackable) giving a cleaner measurement signal.</div>
       </div>
       <div class="insight">
-        <div class="itag tag-s">Spar XKX — most efficient campaign</div>
-        <div class="ibody">With only 17,640 exposed users, Spar drives +€2,056 GOV and +181 orders in-campaign — the highest GOV per exposed user this week. A strong signal for push engagement campaigns in XKX.</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px">
+          <div class="itag tag-s">Spar push — most efficient campaign</div>
+          <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:#eaf3de;color:#3b6d11">XKX</span>
+        </div>
+        <div class="ibody">With only 17,640 exposed users, Spar drives +€2,056 GOV and +181 orders in-campaign — the highest GOV per exposed user this week. Targeted existing Wolt users with no prior grocery orders.</div>
       </div>
       <div class="insight">
-        <div class="itag tag-s">Gjilan — still delivering at post-28d</div>
-        <div class="ibody">Gjilan city launch continues to generate +€1,073 GOV and +53 orders at post-28 days from just 1,261 users. Consistently the most efficient campaign in the portfolio over time.</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px">
+          <div class="itag tag-s">Gjilan city launch — sustained post-28d</div>
+          <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:#eaf3de;color:#3b6d11">XKX</span>
+        </div>
+        <div class="ibody">Gjilan continues to generate +€1,073 GOV and +53 orders at post-28 days from just 1,261 users. Consistently the most efficient campaign in the portfolio over time.</div>
       </div>
     </div>
   </section>
@@ -264,7 +276,7 @@
           <div class="metric-box-label">Inc. new Cx</div>
           <div class="metric-box-value pos">+52</div>
           <div class="metric-box-period">In campaign</div>
-          <div class="metric-box-note">Positive signal — campaign is attracting new customers despite overall negative GOV</div>
+          <div class="metric-box-note">New Cx likely driven by email — the only trackable channel. In-app conversions from existing users are not measurable, masking the full picture.</div>
         </div>
       </div>
     </div>
@@ -308,7 +320,7 @@
           <div class="metric-box-label">Inc. new Cx</div>
           <div class="metric-box-value neg">-114</div>
           <div class="metric-box-period">In campaign</div>
-          <div class="metric-box-note">Negative new Cx is expected — campaign targeted existing users, not acquisition</div>
+          <div class="metric-box-note">CRM reached users before organic conversion — campaign pulled forward new Cx who would have converted anyway, showing as negative incrementality.</div>
         </div>
       </div>
     </div>
