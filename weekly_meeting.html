@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -236,18 +237,28 @@
 
   <!-- DASHBOARDS TAB -->
   <div id="tab-dashboards" class="hidden">
-    <div class="section-label">CRM Reports</div>
+    <div class="section-label">Latest reports — Week of Jul 6, 2026</div>
     <div class="dash-grid">
       <a class="dash-card" href="crm_engagement_report.html" target="_blank">
         <div class="dash-card-eyebrow">Email & Push</div>
         <div class="dash-card-title">Engagement Overview</div>
-        <div class="dash-card-desc">Weekly email and push performance for ALB and XKX — open rates, CTR, volume, unsub rates.</div>
+        <div class="dash-card-desc">Weekly email and push performance for ALB and XKX — open rates, CTR, volume, unsub rates. Apr–Jul 2026.</div>
         <div class="dash-arrow">→</div>
       </a>
-      <a class="dash-card" href="crm_incrementality_report.html" target="_blank">
-        <div class="dash-card-eyebrow">Incrementality</div>
+      <a class="dash-card" href="crm_incrementality_report_Jul13.html" target="_blank">
+        <div class="dash-card-eyebrow">Incrementality · Latest</div>
         <div class="dash-card-title">Campaign Incrementality</div>
-        <div class="dash-card-desc">Treatment vs. control results for FIFA and Gjilan campaigns — incremental GOV, volume, active users.</div>
+        <div class="dash-card-desc">Visa, Spar and Gjilan campaigns — incremental GOV, volume and active users. Split by ALB and XKX.</div>
+        <div class="dash-arrow">→</div>
+      </a>
+    </div>
+
+    <div class="section-label" style="margin-top:1.5rem">Archive</div>
+    <div class="dash-grid">
+      <a class="dash-card" href="crm_incrementality_report.html" target="_blank" style="opacity:.55">
+        <div class="dash-card-eyebrow">Incrementality · Jun 29, 2026</div>
+        <div class="dash-card-title">Campaign Incrementality</div>
+        <div class="dash-card-desc">FIFA non-rights and Gjilan city launch campaigns — incremental GOV, volume and active users.</div>
         <div class="dash-arrow">→</div>
       </a>
     </div>
@@ -272,10 +283,271 @@
 </div>
 
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
+const API = 'https://script.google.com/a/macros/wolt.com/s/AKfycbxOiBnIA0MNGJ3Gw__pX0tpsasJxVMcJcGQn4qZVUXWH0S7-F_ML3JDgEhV4NX40KBe/exec';
+
 let currentWeek = '';
 let actionItems = [];
 let weeks = {};
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+window.onload = async () => {
+  const today = new Date();
+  const day = today.getDay();
+  const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(today); monday.setDate(diff);
+  currentWeek = monday.toISOString().split('T')[0];
+  document.getElementById('weekDate').value = currentWeek;
+
+  showStatus('Loading data...', false);
+  await fetchAll();
+  loadWeek();
+  renderActionItems('all');
+  renderHistory();
+  showStatus('', false);
+};
+
+async function fetchAll() {
+  try {
+    const [weeksRes, actionsRes] = await Promise.all([
+      fetch(`${API}?action=getWeeks`).then(r => r.json()),
+      fetch(`${API}?action=getActions`).then(r => r.json())
+    ]);
+    if (weeksRes.success) weeks = weeksRes.weeks;
+    if (actionsRes.success) actionItems = actionsRes.actions;
+  } catch(e) {
+    showStatus('⚠ Could not load data from Google Sheets', false);
+  }
+}
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  ['update','actions','dashboards','history'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['update','actions','dashboards','history'][i] === tab);
+  });
+  if (tab === 'history') renderHistory();
+  if (tab === 'actions') renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
+}
+
+// ─── Highlights / Lowlights ───────────────────────────────────────────────────
+function addHL(type, value = '') {
+  const list = document.getElementById(type === 'highlight' ? 'highlights-list' : 'lowlights-list');
+  const div = document.createElement('div');
+  div.className = 'hl-item';
+  div.innerHTML = `<textarea placeholder="Add a ${type}...">${value}</textarea><button class="hl-remove" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(div);
+}
+
+function addPlan(value = '') {
+  const list = document.getElementById('plan-list');
+  const div = document.createElement('div');
+  div.className = 'plan-item';
+  div.innerHTML = `<input type="text" placeholder="Plan item for next week..." value="${value}"><button class="hl-remove" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(div);
+}
+
+function addQuickAction(value = '') {
+  const list = document.getElementById('quick-actions-list');
+  const div = document.createElement('div');
+  div.className = 'plan-item';
+  div.innerHTML = `<input type="text" placeholder="Action item..." value="${value}"><button class="hl-remove" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(div);
+}
+
+// ─── Save week ────────────────────────────────────────────────────────────────
+async function saveWeek() {
+  const week = document.getElementById('weekDate').value || currentWeek;
+  currentWeek = week;
+
+  const highlights = [...document.querySelectorAll('#highlights-list textarea')].map(t => t.value).filter(Boolean);
+  const lowlights = [...document.querySelectorAll('#lowlights-list textarea')].map(t => t.value).filter(Boolean);
+  const plan = [...document.querySelectorAll('#plan-list input')].map(t => t.value).filter(Boolean);
+  const quickActions = [...document.querySelectorAll('#quick-actions-list input')].map(t => t.value).filter(Boolean);
+
+  showStatus('Saving...', false);
+
+  try {
+    await fetch(API, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveWeek', week, highlights, lowlights, plan })
+    });
+
+    weeks[week] = { highlights, lowlights, plan };
+
+    for (const text of quickActions) {
+      const item = { id: Date.now() + Math.random(), text, owner: '', due: '', week, status: 'open', created: new Date().toISOString() };
+      await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'saveAction', ...item }) });
+      actionItems.push(item);
+    }
+
+    document.getElementById('quick-actions-list').innerHTML = '';
+    showStatus('✓ Saved ' + formatDate(week), true);
+    setTimeout(() => showStatus('', false), 3000);
+    renderHistory();
+    renderActionItems('all');
+  } catch(e) {
+    showStatus('⚠ Save failed — check connection', false);
+  }
+}
+
+// ─── Load week ────────────────────────────────────────────────────────────────
+function loadWeek() {
+  const week = document.getElementById('weekDate').value || currentWeek;
+  currentWeek = week;
+  document.getElementById('highlights-list').innerHTML = '';
+  document.getElementById('lowlights-list').innerHTML = '';
+  document.getElementById('plan-list').innerHTML = '';
+  document.getElementById('quick-actions-list').innerHTML = '';
+  const data = weeks[week];
+  if (data) {
+    (data.highlights || []).forEach(h => addHL('highlight', h));
+    (data.lowlights || []).forEach(l => addHL('lowlight', l));
+    (data.plan || []).forEach(p => addPlan(p));
+  }
+}
+
+function clearWeek() {
+  if (!confirm('Clear all content for this week?')) return;
+  document.getElementById('highlights-list').innerHTML = '';
+  document.getElementById('lowlights-list').innerHTML = '';
+  document.getElementById('plan-list').innerHTML = '';
+  document.getElementById('quick-actions-list').innerHTML = '';
+}
+
+// ─── Action items ─────────────────────────────────────────────────────────────
+function toggleNewActionForm() {
+  document.getElementById('new-action-form').classList.toggle('hidden');
+}
+
+async function addActionItem() {
+  const text = document.getElementById('new-action-text').value.trim();
+  if (!text) return;
+
+  const item = {
+    id: Date.now(),
+    text,
+    owner: document.getElementById('new-action-owner').value.trim(),
+    due: document.getElementById('new-action-due').value,
+    week: document.getElementById('weekDate').value || currentWeek,
+    status: 'open',
+    created: new Date().toISOString()
+  };
+
+  try {
+    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'saveAction', ...item }) });
+    actionItems.push(item);
+    document.getElementById('new-action-text').value = '';
+    document.getElementById('new-action-owner').value = '';
+    document.getElementById('new-action-due').value = '';
+    document.getElementById('new-action-form').classList.add('hidden');
+    renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
+  } catch(e) {
+    showStatus('⚠ Could not save action item', false);
+  }
+}
+
+async function toggleActionStatus(id) {
+  const item = actionItems.find(a => a.id == id);
+  if (item) {
+    item.status = item.status === 'open' ? 'closed' : 'open';
+    try {
+      await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'updateAction', id, status: item.status }) });
+      renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
+    } catch(e) { showStatus('⚠ Could not update action', false); }
+  }
+}
+
+async function deleteAction(id) {
+  if (!confirm('Remove this action item?')) return;
+  try {
+    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'deleteAction', id }) });
+    actionItems = actionItems.filter(a => a.id != id);
+    renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
+  } catch(e) { showStatus('⚠ Could not delete action', false); }
+}
+
+function filterActions(filter, el) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderActionItems(filter);
+}
+
+function renderActionItems(filter) {
+  const list = document.getElementById('action-items-list');
+  let items = filter === 'all' ? actionItems : actionItems.filter(a => a.status === filter);
+  if (items.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-3);font-size:13px">No action items yet.</div>`;
+    return;
+  }
+  const grouped = {};
+  items.forEach(item => { const w = item.week || 'Unknown'; if (!grouped[w]) grouped[w] = []; grouped[w].push(item); });
+  const sortedWeeks = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+  list.innerHTML = sortedWeeks.map(week => `
+    <div class="week-group">
+      <div class="week-group-header">Week of ${formatDate(week)}<span class="week-badge">${grouped[week].length} item${grouped[week].length !== 1 ? 's' : ''}</span></div>
+      ${grouped[week].map(item => `
+        <div class="action-item ${item.status === 'closed' ? 'done' : ''}">
+          <input type="checkbox" class="action-check" ${item.status === 'closed' ? 'checked' : ''} onchange="toggleActionStatus(${item.id})">
+          <div class="action-body">
+            <div class="action-text">${item.text}</div>
+            <div class="action-meta">
+              ${item.owner ? `<span class="action-tag tag-owner">👤 ${item.owner}</span>` : ''}
+              ${item.due ? `<span class="action-tag tag-due">📅 ${formatDate(item.due)}</span>` : ''}
+              <span class="action-tag ${item.status === 'open' ? 'tag-open' : 'tag-closed'}">${item.status === 'open' ? 'Open' : 'Closed'}</span>
+            </div>
+          </div>
+          <button class="btn btn-danger btn-small" onclick="deleteAction(${item.id})">Remove</button>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+// ─── History ──────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const sortedWeeks = Object.keys(weeks).sort((a, b) => b.localeCompare(a));
+  if (sortedWeeks.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-3);font-size:13px">No saved weeks yet.</div>`;
+    return;
+  }
+  list.innerHTML = sortedWeeks.map(week => {
+    const data = weeks[week];
+    const weekActions = actionItems.filter(a => a.week === week);
+    const openCount = weekActions.filter(a => a.status === 'open').length;
+    const closedCount = weekActions.filter(a => a.status === 'closed').length;
+    return `
+    <div class="history-week">
+      <div class="history-week-title">
+        Week of ${formatDate(week)}
+        <div style="display:flex;gap:6px">
+          ${openCount > 0 ? `<span class="action-tag tag-open">${openCount} open</span>` : ''}
+          ${closedCount > 0 ? `<span class="action-tag tag-closed">${closedCount} closed</span>` : ''}
+          <button class="btn btn-secondary btn-small" onclick="document.getElementById('weekDate').value='${week}';loadWeek();switchTab('update')">Load week</button>
+        </div>
+      </div>
+      ${data.highlights?.length ? `<div class="history-section"><div class="history-section-label">✅ Highlights</div><div class="history-items">${data.highlights.map(h => `<div class="history-item">${h}</div>`).join('')}</div></div>` : ''}
+      ${data.lowlights?.length ? `<div class="history-section"><div class="history-section-label">⚠ Lowlights</div><div class="history-items">${data.lowlights.map(l => `<div class="history-item">${l}</div>`).join('')}</div></div>` : ''}
+      ${data.plan?.length ? `<div class="history-section"><div class="history-section-label">📋 Next week plan</div><div class="history-items">${data.plan.map(p => `<div class="history-item">${p}</div>`).join('')}</div></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function showStatus(msg, success) {
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+  el.style.color = success ? 'var(--green)' : 'var(--text-3)';
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+</script>
+</body>
+</html>
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 window.onload = () => {
