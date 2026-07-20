@@ -405,7 +405,7 @@ async function addReport() {
   if (!name || !url || !date) { showStatus('Please fill in all fields', false); return; }
   const report = { id: Date.now(), name, type, url, date };
   try {
-    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'saveReport', ...report }) });
+    await apiCall('saveReport', report);
     reports.push(report);
     document.getElementById('rpt-name').value = '';
     document.getElementById('rpt-url').value = '';
@@ -414,7 +414,6 @@ async function addReport() {
     showStatus('Report added', true);
     setTimeout(() => showStatus('', false), 2000);
   } catch(e) {
-    // Save failed, still add locally
     reports.push(report);
     renderReports();
   }
@@ -422,9 +421,7 @@ async function addReport() {
 
 async function deleteReport(id) {
   if (!confirm('Remove this report?')) return;
-  try {
-    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'deleteReport', id }) });
-  } catch(e) {}
+  try { await apiCall('deleteReport', { id }); } catch(e) {}
   reports = reports.filter(r => r.id != id);
   renderReports();
 }
@@ -505,6 +502,12 @@ function addQuickAction(value = '') {
   list.appendChild(div);
 }
 
+async function apiCall(action, data = {}) {
+  const params = `?action=${action}&data=${encodeURIComponent(JSON.stringify(data))}`;
+  const res = await fetch(API + params);
+  return res.json();
+}
+
 async function saveWeek() {
   const week = document.getElementById('weekDate').value || currentWeek;
   currentWeek = week;
@@ -514,11 +517,11 @@ async function saveWeek() {
   const quickActions = [...document.querySelectorAll('#quick-actions-list input')].map(t => t.value).filter(Boolean);
   showStatus('Saving...', false);
   try {
-    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'saveWeek', week, highlights, lowlights, plan }) });
+    await apiCall('saveWeek', { week, highlights, lowlights, plan });
     weeks[week] = { highlights, lowlights, plan };
     for (const text of quickActions) {
       const item = { id: Date.now() + Math.random(), text, owner: '', due: '', week, status: 'open', created: new Date().toISOString() };
-      await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'saveAction', ...item }) });
+      await apiCall('saveAction', item);
       actionItems.push(item);
     }
     document.getElementById('quick-actions-list').innerHTML = '';
@@ -560,7 +563,7 @@ async function addActionItem() {
   if (!text) return;
   const item = { id: Date.now(), text, owner: document.getElementById('new-action-owner').value.trim(), due: document.getElementById('new-action-due').value, week: document.getElementById('weekDate').value || currentWeek, status: 'open', created: new Date().toISOString() };
   try {
-    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'saveAction', ...item }) });
+    await apiCall('saveAction', item);
     actionItems.push(item);
     document.getElementById('new-action-text').value = '';
     document.getElementById('new-action-owner').value = '';
@@ -569,13 +572,14 @@ async function addActionItem() {
     renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
   } catch(e) { showStatus('Could not save action item', false); }
 }
+}
 
 async function toggleActionStatus(id) {
   const item = actionItems.find(a => a.id == id);
   if (item) {
     item.status = item.status === 'open' ? 'closed' : 'open';
     try {
-      await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'updateAction', id, status: item.status }) });
+      await apiCall('updateAction', { id, status: item.status });
       renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
     } catch(e) { showStatus('Could not update action', false); }
   }
@@ -584,7 +588,7 @@ async function toggleActionStatus(id) {
 async function deleteAction(id) {
   if (!confirm('Remove this action item?')) return;
   try {
-    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'deleteAction', id }) });
+    await apiCall('deleteAction', { id });
     actionItems = actionItems.filter(a => a.id != id);
     renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
   } catch(e) { showStatus('Could not delete action', false); }
