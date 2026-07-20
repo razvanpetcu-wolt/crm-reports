@@ -124,6 +124,26 @@
 
   .hidden { display: none; }
 
+  /* Calendar */
+  .cal-country-block { margin-bottom:1.5rem; }
+  .cal-country-hdr { font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding-bottom:5px;border-bottom:2px solid;margin-bottom:10px; }
+  .cal-country-hdr.alb { color:var(--blue);border-color:var(--blue); }
+  .cal-country-hdr.xkx { color:var(--green);border-color:var(--green); }
+  .cal-campaign { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px; }
+  .cal-campaign.planned { border-left:3px solid #6b9fd4; }
+  .cal-campaign.live { border-left:3px solid var(--green); }
+  .cal-campaign.completed { border-left:3px solid #c0c0bc;opacity:.7; }
+  .cal-date { font-size:11px;font-weight:600;color:var(--text-3);min-width:50px;padding-top:2px; }
+  .cal-body { flex:1; }
+  .cal-name { font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px; }
+  .cal-meta { display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--text-3); }
+  .cal-tag { padding:1px 7px;border-radius:4px;background:var(--surface-2);border:0.5px solid var(--border); }
+  .cal-status { padding:1px 7px;border-radius:4px;font-size:11px;font-weight:500; }
+  .cal-status.planned { background:#deeaf9;color:#1a4f8a; }
+  .cal-status.live { background:var(--green-bg);color:var(--green-text); }
+  .cal-status.completed { background:#f2f1ee;color:#898781; }
+  .cal-empty { text-align:center;padding:2rem;color:var(--text-3);font-size:13px; }</style>
+
   footer { margin-bottom: 5rem; }
 
   @media (max-width: 600px) {
@@ -152,6 +172,7 @@
     <button class="tab active" onclick="switchTab('update')">Weekly Update</button>
     <button class="tab" onclick="switchTab('actions')">Action Items</button>
     <button class="tab" onclick="switchTab('dashboards')">Dashboards</button>
+    <button class="tab" onclick="switchTab('calendar')">Campaign Calendar</button>
     <button class="tab" onclick="switchTab('history')">History</button>
   </div>
 
@@ -275,6 +296,37 @@
     <div id="reports-list"></div>
   </div>
 
+  <!-- CAMPAIGN CALENDAR TAB -->
+  <div id="tab-calendar" class="hidden">
+
+    <!-- Controls -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-secondary btn-small" onclick="calNav(-1)">← Prev</button>
+        <span id="cal-week-label" style="font-size:13px;font-weight:500;color:var(--text-2);min-width:160px;text-align:center"></span>
+        <button class="btn btn-secondary btn-small" onclick="calNav(1)">Next →</button>
+        <button class="btn btn-secondary btn-small" onclick="calToday()">Today</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span style="font-size:12px;color:var(--text-3)">Country:</span>
+        <button class="ftab active" id="cal-filter-all" onclick="calFilter('all',this)">All</button>
+        <button class="ftab" id="cal-filter-alb" onclick="calFilter('alb',this)">ALB</button>
+        <button class="ftab" id="cal-filter-xkx" onclick="calFilter('xkx',this)">XKX</button>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div style="display:flex;gap:14px;margin-bottom:1rem;flex-wrap:wrap;font-size:12px;color:var(--text-3)">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#c9d8f0;flex-shrink:0"></span>Planned</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#b8e6b8;flex-shrink:0"></span>Live</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#e0e0de;flex-shrink:0"></span>Completed</span>
+      <span style="display:flex;align-items:center;gap:5px">📧 Email &nbsp; 🔔 Push &nbsp; 📱 In-app</span>
+    </div>
+
+    <div id="cal-loading" style="text-align:center;padding:2rem;color:var(--text-3);font-size:13px">Loading campaigns...</div>
+    <div id="cal-content" class="hidden"></div>
+  </div>
+
   <!-- HISTORY TAB -->
   <div id="tab-history" class="hidden">
     <div class="section-label">Previous weeks</div>
@@ -338,9 +390,10 @@ async function fetchAll() {
 
 function getDefaultReports() {
   return [
-    { id: 1, name: 'Campaign Incrementality', type: 'Incrementality', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_incrementality_report_Jul13.html', date: '2026-07-13' },
-    { id: 2, name: 'Engagement Overview', type: 'Email & Push', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_engagement_report.html', date: '2026-07-13' },
-    { id: 3, name: 'Campaign Incrementality', type: 'Incrementality', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_incrementality_report.html', date: '2026-06-29' }
+    { id: 1, name: 'Campaign Engagement', type: 'Email & Push', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_engagement_report_Jul13.html', date: '2026-07-13' },
+    { id: 2, name: 'Campaign Incrementality', type: 'Incrementality', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_incrementality_report_Jul13.html', date: '2026-07-13' },
+    { id: 3, name: 'Engagement Overview', type: 'Email & Push', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_engagement_report.html', date: '2026-06-29' },
+    { id: 4, name: 'Campaign Incrementality', type: 'Incrementality', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_incrementality_report.html', date: '2026-06-29' }
   ];
 }
 
@@ -426,17 +479,6 @@ function renderReports() {
     });
   }
   list.innerHTML = html;
-}
-
-function switchTab(tab) {
-  ['update','actions','dashboards','history'].forEach(t => {
-    document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
-  });
-  document.querySelectorAll('.tab').forEach((el, i) => {
-    el.classList.toggle('active', ['update','actions','dashboards','history'][i] === tab);
-  });
-  if (tab === 'history') renderHistory();
-  if (tab === 'actions') renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
 }
 
 function addHL(type, value = '') {
@@ -615,6 +657,157 @@ function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// ─── Tab switching (updated for calendar) ─────────────────────────────────────
+function switchTab(tab) {
+  ['update','actions','dashboards','calendar','history'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['update','actions','dashboards','calendar','history'][i] === tab);
+  });
+  if (tab === 'history') renderHistory();
+  if (tab === 'actions') renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
+  if (tab === 'calendar') loadCalendar();
+}
+
+// ─── Calendar ─────────────────────────────────────────────────────────────────
+const CAL_SHEET_ID = '1ADY2-cCMYYPEr5QW3MFBsAzRZW-4ZGHxJBCvugEAyJo';
+let calCampaigns = [];
+let calWeekOffset = 0;
+let calCountryFilter = 'all';
+let calLoaded = false;
+
+async function loadCalendar() {
+  if (calLoaded) { renderCalendar(); return; }
+  document.getElementById('cal-loading').classList.remove('hidden');
+  document.getElementById('cal-content').classList.add('hidden');
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${CAL_SHEET_ID}/gviz/tq?tqx=out:json`;
+    const res = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/)[1]);
+    const rows = json.table.rows;
+    const cols = json.table.cols.map(c => c.label);
+    calCampaigns = rows.map(row => {
+      const obj = {};
+      cols.forEach((col, i) => { obj[col] = row.c[i] ? (row.c[i].f || row.c[i].v || '') : ''; });
+      return obj;
+    }).filter(r => r['Campaign Name'] || r['Campaign Date']);
+    calLoaded = true;
+    document.getElementById('cal-loading').classList.add('hidden');
+    document.getElementById('cal-content').classList.remove('hidden');
+  } catch(e) {
+    document.getElementById('cal-loading').textContent = '⚠ Could not load campaigns. Make sure the Google Sheet is shared publicly (Anyone with link can view).';
+    return;
+  }
+  renderCalendar();
+}
+
+function calNav(dir) { calWeekOffset += dir; renderCalendar(); }
+function calToday() { calWeekOffset = 0; renderCalendar(); }
+function calFilter(f, el) {
+  calCountryFilter = f;
+  document.querySelectorAll('[id^="cal-filter-"]').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderCalendar();
+}
+
+function getWeekRange(offset) {
+  const today = new Date();
+  const day = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+  monday.setHours(0,0,0,0);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23,59,59,999);
+  return { monday, sunday };
+}
+
+function renderCalendar() {
+  const { monday, sunday } = getWeekRange(calWeekOffset);
+  const label = `${monday.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${sunday.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`;
+  document.getElementById('cal-week-label').textContent = label;
+
+  let filtered = calCampaigns.filter(c => {
+    const d = parseCalDate(c['Campaign Date']);
+    if (!d) return false;
+    return d >= monday && d <= sunday;
+  });
+
+  if (calCountryFilter === 'alb') filtered = filtered.filter(c => !String(c['Country']||'').toUpperCase().includes('XKX'));
+  if (calCountryFilter === 'xkx') filtered = filtered.filter(c => String(c['Country']||'').toUpperCase().includes('XKX'));
+
+  const content = document.getElementById('cal-content');
+
+  if (!filtered.length) {
+    content.innerHTML = `<div class="cal-empty">No campaigns found for this week.</div>`;
+    return;
+  }
+
+  const alb = filtered.filter(c => !String(c['Country']||'').toUpperCase().includes('XKX'));
+  const xkx = filtered.filter(c => String(c['Country']||'').toUpperCase().includes('XKX'));
+
+  let html = '';
+  if (calCountryFilter !== 'xkx' && alb.length) {
+    html += `<div class="cal-country-block">
+      <div class="cal-country-hdr alb">🇦🇱 Albania (ALB) — ${alb.length} campaign${alb.length!==1?'s':''}</div>
+      ${alb.map(c => renderCampaignRow(c)).join('')}
+    </div>`;
+  }
+  if (calCountryFilter !== 'alb' && xkx.length) {
+    html += `<div class="cal-country-block">
+      <div class="cal-country-hdr xkx">🇽🇰 Kosovo (XKX) — ${xkx.length} campaign${xkx.length!==1?'s':''}</div>
+      ${xkx.map(c => renderCampaignRow(c)).join('')}
+    </div>`;
+  }
+  if (!html) html = `<div class="cal-empty">No campaigns found for selected country this week.</div>`;
+  content.innerHTML = html;
+}
+
+function renderCampaignRow(c) {
+  const status = String(c['Status']||'planned').toLowerCase();
+  const statusClass = status.includes('complet') ? 'completed' : status.includes('live') ? 'live' : 'planned';
+  const statusLabel = status.includes('complet') ? 'Completed' : status.includes('live') ? 'Live' : 'Planned';
+  const channels = String(c['Channel Type']||'').split(',').map(ch => {
+    ch = ch.trim().toLowerCase();
+    if (ch.includes('email')) return '📧 Email';
+    if (ch.includes('push')) return '🔔 Push';
+    if (ch.includes('in-app')||ch.includes('inapp')) return '📱 In-app';
+    return ch;
+  }).filter(Boolean).join(' · ');
+  const date = parseCalDate(c['Campaign Date']);
+  const dateStr = date ? date.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
+  const desc = c['Intro/ Short Description'] || c['Description'] || '';
+
+  return `<div class="cal-campaign ${statusClass}">
+    <div class="cal-date">${dateStr}</div>
+    <div class="cal-body">
+      <div class="cal-name">${c['Campaign Name']||'—'}</div>
+      <div class="cal-meta">
+        ${c['City'] ? `<span class="cal-tag">📍 ${c['City']}</span>` : ''}
+        ${c['Category'] ? `<span class="cal-tag">${c['Category']}</span>` : ''}
+        ${channels ? `<span class="cal-tag">${channels}</span>` : ''}
+        ${c['Target Audience'] ? `<span class="cal-tag">👥 ${c['Target Audience']}</span>` : ''}
+        <span class="cal-status ${statusClass}">${statusLabel}</span>
+      </div>
+      ${desc ? `<div style="font-size:12px;color:var(--text-3);margin-top:4px">${desc}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function parseCalDate(val) {
+  if (!val) return null;
+  const s = String(val);
+  const parts = s.split('/');
+  if (parts.length === 3) {
+    let year = parseInt(parts[2]);
+    if (year < 100) year += 2000;
+    return new Date(year, parseInt(parts[1])-1, parseInt(parts[0]));
+  }
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
 }
 </script>
 </body>
