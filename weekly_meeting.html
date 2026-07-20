@@ -144,6 +144,23 @@
   .cal-status.completed { background:#f2f1ee;color:#898781; }
   .cal-empty { text-align:center;padding:2rem;color:var(--text-3);font-size:13px; }
 
+  /* Month grid */
+  .month-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border-radius:8px;overflow:hidden;margin-bottom:1.5rem; }
+  .month-grid-header { background:var(--surface-2);padding:6px;text-align:center;font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em; }
+  .month-day { background:var(--surface);padding:6px;min-height:80px;vertical-align:top; }
+  .month-day.other-month { background:var(--bg);opacity:.5; }
+  .month-day.today-day { background:#f0f7ff; }
+  .month-day-num { font-size:11px;font-weight:600;color:var(--text-3);margin-bottom:4px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%; }
+  .month-day.today-day .month-day-num { color:#fff;background:var(--alb); }
+  .month-event { font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+  .month-event.planned { background:#deeaf9;color:#1a4f8a; }
+  .month-event.live { background:#eaf3de;color:#3b6d11; }
+  .month-event.completed { background:#f2f1ee;color:#898781; }
+  .month-event.cancelled { background:#fce8e8;color:#a32d2d; }
+  .month-event.alb-ev { border-left:2px solid var(--alb); }
+  .month-event.xkx-ev { border-left:2px solid var(--xkx); }
+  .month-more { font-size:10px;color:var(--text-3);padding:1px 4px;cursor:pointer; }
+
   footer { margin-bottom: 5rem; }
 
   @media (max-width: 600px) {
@@ -308,6 +325,10 @@
         <button class="btn btn-secondary btn-small" onclick="calToday()">Today</button>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
+        <div style="display:flex;gap:4px;border:0.5px solid var(--border-strong);border-radius:var(--radius);padding:2px">
+          <button id="cal-view-week" class="ftab active" onclick="calSetView('week',this)">Week</button>
+          <button id="cal-view-month" class="ftab" onclick="calSetView('month',this)">Month</button>
+        </div>
         <span style="font-size:12px;color:var(--text-3)">Country:</span>
         <button class="ftab active" id="cal-filter-all" onclick="calFilter('all',this)">All</button>
         <button class="ftab" id="cal-filter-alb" onclick="calFilter('alb',this)">ALB</button>
@@ -318,8 +339,9 @@
     <!-- Legend -->
     <div style="display:flex;gap:14px;margin-bottom:1rem;flex-wrap:wrap;font-size:12px;color:var(--text-3)">
       <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#c9d8f0;flex-shrink:0"></span>Planned</span>
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#b8e6b8;flex-shrink:0"></span>Live</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#b8e6b8;flex-shrink:0"></span>Live / Launched</span>
       <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#e0e0de;flex-shrink:0"></span>Completed</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#fce8e8;flex-shrink:0"></span>Cancelled</span>
       <span style="display:flex;align-items:center;gap:5px">📧 Email &nbsp; 🔔 Push &nbsp; 📱 In-app</span>
     </div>
 
@@ -643,8 +665,17 @@ const CAL_SHEETS = {
 const CAL_SHEET_NAME = 'Campaign Overview';
 let calCampaigns = [];
 let calWeekOffset = 0;
+let calMonthOffset = 0;
 let calCountryFilter = 'all';
 let calLoaded = false;
+let calView = 'week';
+
+function calSetView(view, el) {
+  calView = view;
+  document.querySelectorAll('[id^="cal-view-"]').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  if (calLoaded) renderCalendar();
+}
 
 async function fetchSheetData(sheetId, country) {
   const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(CAL_SHEET_NAME)}`;
@@ -680,8 +711,11 @@ async function loadCalendar() {
   renderCalendar();
 }
 
-function calNav(dir) { calWeekOffset += dir; renderCalendar(); }
-function calToday() { calWeekOffset = 0; renderCalendar(); }
+function calNav(dir) {
+  if (calView === 'month') calMonthOffset += dir; else calWeekOffset += dir;
+  renderCalendar();
+}
+function calToday() { calWeekOffset = 0; calMonthOffset = 0; renderCalendar(); }
 function calFilter(f, el) {
   calCountryFilter = f;
   document.querySelectorAll('[id^="cal-filter-"]').forEach(b => b.classList.remove('active'));
@@ -701,28 +735,127 @@ function getWeekRange(offset) {
 }
 
 function renderCalendar() {
+  const content = document.getElementById('cal-content');
+
+  if (calView === 'month') {
+    renderMonthView(content);
+  } else {
+    renderWeekView(content);
+  }
+}
+
+function filterByCountry(campaigns) {
+  if (calCountryFilter === 'alb') return campaigns.filter(c => c['Country'] === 'ALB');
+  if (calCountryFilter === 'xkx') return campaigns.filter(c => c['Country'] === 'XKX');
+  return campaigns;
+}
+
+function renderWeekView(content) {
   const { monday, sunday } = getWeekRange(calWeekOffset);
   const label = `${monday.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${sunday.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`;
   document.getElementById('cal-week-label').textContent = label;
-  let filtered = calCampaigns.filter(c => {
+  let filtered = filterByCountry(calCampaigns.filter(c => {
     const d = parseCalDate(c['Campaign Date']);
-    if (!d) return false;
-    return d >= monday && d <= sunday;
-  });
-  if (calCountryFilter === 'alb') filtered = filtered.filter(c => c['Country'] === 'ALB');
-  if (calCountryFilter === 'xkx') filtered = filtered.filter(c => c['Country'] === 'XKX');
-  const content = document.getElementById('cal-content');
+    return d && d >= monday && d <= sunday;
+  }));
   if (!filtered.length) { content.innerHTML = `<div class="cal-empty">No campaigns found for this week.</div>`; return; }
   const alb = filtered.filter(c => c['Country'] === 'ALB');
   const xkx = filtered.filter(c => c['Country'] === 'XKX');
   let html = '';
-  if (calCountryFilter !== 'xkx' && alb.length) {
-    html += `<div class="cal-country-block"><div class="cal-country-hdr alb">🇦🇱 Albania (ALB) — ${alb.length} campaign${alb.length!==1?'s':''}</div>${alb.map(c => renderCampaignRow(c)).join('')}</div>`;
+  if (calCountryFilter !== 'xkx' && alb.length) html += `<div class="cal-country-block"><div class="cal-country-hdr alb">🇦🇱 Albania (ALB) — ${alb.length} campaign${alb.length!==1?'s':''}</div>${alb.map(c => renderCampaignRow(c)).join('')}</div>`;
+  if (calCountryFilter !== 'alb' && xkx.length) html += `<div class="cal-country-block"><div class="cal-country-hdr xkx">🇽🇰 Kosovo (XKX) — ${xkx.length} campaign${xkx.length!==1?'s':''}</div>${xkx.map(c => renderCampaignRow(c)).join('')}</div>`;
+  if (!html) html = `<div class="cal-empty">No campaigns found for selected country.</div>`;
+  content.innerHTML = html;
+}
+
+function renderMonthView(content) {
+  const today = new Date();
+  const ref = new Date(today.getFullYear(), today.getMonth() + calMonthOffset, 1);
+  const year = ref.getFullYear();
+  const month = ref.getMonth();
+  const monthName = ref.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  document.getElementById('cal-week-label').textContent = monthName;
+
+  // Get campaigns for this month
+  const monthStart = new Date(year, month, 1);
+  const monthEnd = new Date(year, month + 1, 0, 23, 59, 59);
+  const filtered = filterByCountry(calCampaigns.filter(c => {
+    const d = parseCalDate(c['Campaign Date']);
+    return d && d >= monthStart && d <= monthEnd;
+  }));
+
+  // Build day map
+  const dayMap = {};
+  filtered.forEach(c => {
+    const d = parseCalDate(c['Campaign Date']);
+    if (!d) return;
+    const key = d.getDate();
+    if (!dayMap[key]) dayMap[key] = [];
+    dayMap[key].push(c);
+  });
+
+  // Grid: start from Monday
+  const firstDay = new Date(year, month, 1);
+  const startDow = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // 0=Mon
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayDate = new Date(); todayDate.setHours(0,0,0,0);
+
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let html = `<div class="month-grid">`;
+  days.forEach(d => html += `<div class="month-grid-header">${d}</div>`);
+
+  // Empty cells before first day
+  for (let i = 0; i < startDow; i++) html += `<div class="month-day other-month"></div>`;
+
+  // Days
+  for (let day = 1; day <= daysInMonth; day++) {
+    const thisDate = new Date(year, month, day);
+    const isToday = thisDate.getTime() === todayDate.getTime();
+    const campaigns = dayMap[day] || [];
+    const maxShow = 3;
+    html += `<div class="month-day ${isToday ? 'today-day' : ''}">
+      <div class="month-day-num">${day}</div>`;
+    campaigns.slice(0, maxShow).forEach(c => {
+      const status = String(c['Status']||'planned').toLowerCase();
+      const sc = status.includes('complet') ? 'completed' : status.includes('launch')||status.includes('live') ? 'live' : status.includes('cancel') ? 'cancelled' : 'planned';
+      const country = c['Country'] === 'ALB' ? 'alb-ev' : 'xkx-ev';
+      const channels = String(c['Channel Type']||'').split(',').map(ch => {
+        ch = ch.trim().toLowerCase();
+        if (ch.includes('email')) return '📧';
+        if (ch.includes('push')) return '🔔';
+        if (ch.includes('in-app')||ch.includes('inapp')) return '📱';
+        return '';
+      }).filter(Boolean).join('');
+      html += `<div class="month-event ${sc} ${country}" title="${c['Campaign Name']} — ${c['Country']}\n${c['Intro/ Short Description']||''}">${channels} ${c['Campaign Name']}</div>`;
+    });
+    if (campaigns.length > maxShow) html += `<div class="month-more">+${campaigns.length - maxShow} more</div>`;
+    html += `</div>`;
   }
-  if (calCountryFilter !== 'alb' && xkx.length) {
-    html += `<div class="cal-country-block"><div class="cal-country-hdr xkx">🇽🇰 Kosovo (XKX) — ${xkx.length} campaign${xkx.length!==1?'s':''}</div>${xkx.map(c => renderCampaignRow(c)).join('')}</div>`;
+
+  // Fill remaining cells
+  const totalCells = startDow + daysInMonth;
+  const remainder = totalCells % 7;
+  if (remainder > 0) {
+    for (let i = 0; i < 7 - remainder; i++) html += `<div class="month-day other-month"></div>`;
   }
-  if (!html) html = `<div class="cal-empty">No campaigns found for selected country this week.</div>`;
+  html += `</div>`;
+
+  // Summary below grid
+  if (filtered.length) {
+    const alb = filtered.filter(c => c['Country'] === 'ALB');
+    const xkx = filtered.filter(c => c['Country'] === 'XKX');
+    html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:.5rem">`;
+    if (calCountryFilter !== 'xkx' && alb.length) {
+      html += `<div><div style="font-size:11px;font-weight:600;color:var(--alb);text-transform:uppercase;letter-spacing:.05em;padding-bottom:4px;border-bottom:2px solid var(--alb);margin-bottom:8px">🇦🇱 ALB — ${alb.length} campaigns</div>${alb.map(c => renderCampaignRow(c)).join('')}</div>`;
+    }
+    if (calCountryFilter !== 'alb' && xkx.length) {
+      html += `<div><div style="font-size:11px;font-weight:600;color:var(--xkx);text-transform:uppercase;letter-spacing:.05em;padding-bottom:4px;border-bottom:2px solid var(--xkx);margin-bottom:8px">🇽🇰 XKX — ${xkx.length} campaigns</div>${xkx.map(c => renderCampaignRow(c)).join('')}</div>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div class="cal-empty">No campaigns this month.</div>`;
+  }
+
   content.innerHTML = html;
 }
 
