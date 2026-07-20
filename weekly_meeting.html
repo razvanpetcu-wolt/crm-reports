@@ -347,7 +347,423 @@
 
 
 <script>
-const API = 'https://script.google.com/a/macros/wolt.com/s/AKfycbxOiBnIA0MNGJ3Gw__pX0tpsasJxVMcJcGQn4qZVUXWH0S7-F_ML3JDgEhV4NX40KBe/exec';
+let currentWeek = '';
+let actionItems = [];
+let weeks = {};
+let reports = [];
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+window.onload = () => {
+  weeks = JSON.parse(localStorage.getItem('crm_weeks') || '{}');
+  actionItems = JSON.parse(localStorage.getItem('crm_actions') || '[]');
+  reports = JSON.parse(localStorage.getItem('crm_reports') || 'null') || getDefaultReports();
+
+  const today = new Date();
+  const day = today.getDay();
+  const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(today); monday.setDate(diff);
+  currentWeek = monday.toISOString().split('T')[0];
+  document.getElementById('weekDate').value = currentWeek;
+  document.getElementById('rpt-date').value = currentWeek;
+
+  loadWeek();
+  renderActionItems('all');
+  renderHistory();
+  renderReports();
+};
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  ['update','actions','dashboards','calendar','history'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['update','actions','dashboards','calendar','history'][i] === tab);
+  });
+  if (tab === 'history') renderHistory();
+  if (tab === 'actions') renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
+  if (tab === 'calendar') loadCalendar();
+}
+
+// ─── Highlights / Lowlights ───────────────────────────────────────────────────
+function addHL(type, value = '') {
+  const list = document.getElementById(type === 'highlight' ? 'highlights-list' : 'lowlights-list');
+  const div = document.createElement('div');
+  div.className = 'hl-item';
+  div.innerHTML = `<textarea placeholder="Add a ${type}...">${value}</textarea><button class="hl-remove" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(div);
+}
+
+function addPlan(value = '') {
+  const list = document.getElementById('plan-list');
+  const div = document.createElement('div');
+  div.className = 'plan-item';
+  div.innerHTML = `<input type="text" placeholder="Plan item for next week..." value="${value}"><button class="hl-remove" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(div);
+}
+
+function addQuickAction(value = '') {
+  const list = document.getElementById('quick-actions-list');
+  const div = document.createElement('div');
+  div.className = 'plan-item';
+  div.innerHTML = `<input type="text" placeholder="Action item..." value="${value}"><button class="hl-remove" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(div);
+}
+
+// ─── Save week ────────────────────────────────────────────────────────────────
+function saveWeek() {
+  const week = document.getElementById('weekDate').value || currentWeek;
+  currentWeek = week;
+  const highlights = [...document.querySelectorAll('#highlights-list textarea')].map(t => t.value).filter(Boolean);
+  const lowlights = [...document.querySelectorAll('#lowlights-list textarea')].map(t => t.value).filter(Boolean);
+  const plan = [...document.querySelectorAll('#plan-list input')].map(t => t.value).filter(Boolean);
+  const quickActions = [...document.querySelectorAll('#quick-actions-list input')].map(t => t.value).filter(Boolean);
+
+  weeks[week] = { highlights, lowlights, plan };
+  localStorage.setItem('crm_weeks', JSON.stringify(weeks));
+
+  quickActions.forEach(text => {
+    const item = { id: Date.now() + Math.random(), text, owner: '', due: '', week, status: 'open', created: new Date().toISOString() };
+    actionItems.push(item);
+  });
+  localStorage.setItem('crm_actions', JSON.stringify(actionItems));
+
+  document.getElementById('quick-actions-list').innerHTML = '';
+  showStatus('Saved ' + formatDate(week), true);
+  setTimeout(() => showStatus('', false), 3000);
+  renderHistory();
+  renderActionItems('all');
+}
+
+// ─── Load week ────────────────────────────────────────────────────────────────
+function loadWeek() {
+  const week = document.getElementById('weekDate').value || currentWeek;
+  currentWeek = week;
+  document.getElementById('highlights-list').innerHTML = '';
+  document.getElementById('lowlights-list').innerHTML = '';
+  document.getElementById('plan-list').innerHTML = '';
+  document.getElementById('quick-actions-list').innerHTML = '';
+  const data = weeks[week];
+  if (data) {
+    (data.highlights || []).forEach(h => addHL('highlight', h));
+    (data.lowlights || []).forEach(l => addHL('lowlight', l));
+    (data.plan || []).forEach(p => addPlan(p));
+  }
+}
+
+function clearWeek() {
+  if (!confirm('Clear all content for this week?')) return;
+  ['highlights-list','lowlights-list','plan-list','quick-actions-list'].forEach(id => document.getElementById(id).innerHTML = '');
+}
+
+// ─── Action items ─────────────────────────────────────────────────────────────
+function toggleNewActionForm() {
+  document.getElementById('new-action-form').classList.toggle('hidden');
+}
+
+function addActionItem() {
+  const text = document.getElementById('new-action-text').value.trim();
+  if (!text) return;
+  const item = { id: Date.now(), text, owner: document.getElementById('new-action-owner').value.trim(), due: document.getElementById('new-action-due').value, week: document.getElementById('weekDate').value || currentWeek, status: 'open', created: new Date().toISOString() };
+  actionItems.push(item);
+  localStorage.setItem('crm_actions', JSON.stringify(actionItems));
+  document.getElementById('new-action-text').value = '';
+  document.getElementById('new-action-owner').value = '';
+  document.getElementById('new-action-due').value = '';
+  document.getElementById('new-action-form').classList.add('hidden');
+  renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
+}
+
+function toggleActionStatus(id) {
+  const item = actionItems.find(a => a.id == id);
+  if (item) {
+    item.status = item.status === 'open' ? 'closed' : 'open';
+    localStorage.setItem('crm_actions', JSON.stringify(actionItems));
+    renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
+  }
+}
+
+function deleteAction(id) {
+  if (!confirm('Remove this action item?')) return;
+  actionItems = actionItems.filter(a => a.id != id);
+  localStorage.setItem('crm_actions', JSON.stringify(actionItems));
+  renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
+}
+
+function filterActions(filter, el) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderActionItems(filter);
+}
+
+function renderActionItems(filter) {
+  const list = document.getElementById('action-items-list');
+  let items = filter === 'all' ? actionItems : actionItems.filter(a => a.status === filter);
+  if (items.length === 0) { list.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-3);font-size:13px">No action items yet.</div>`; return; }
+  const grouped = {};
+  items.forEach(item => { const w = item.week || 'Unknown'; if (!grouped[w]) grouped[w] = []; grouped[w].push(item); });
+  const sortedWeeks = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+  list.innerHTML = sortedWeeks.map(week => `
+    <div class="week-group">
+      <div class="week-group-header">Week of ${formatDate(week)}<span class="week-badge">${grouped[week].length} item${grouped[week].length !== 1 ? 's' : ''}</span></div>
+      ${grouped[week].map(item => `
+        <div class="action-item ${item.status === 'closed' ? 'done' : ''}">
+          <input type="checkbox" class="action-check" ${item.status === 'closed' ? 'checked' : ''} onchange="toggleActionStatus(${item.id})">
+          <div class="action-body">
+            <div class="action-text">${item.text}</div>
+            <div class="action-meta">
+              ${item.owner ? `<span class="action-tag tag-owner">👤 ${item.owner}</span>` : ''}
+              ${item.due ? `<span class="action-tag tag-due">📅 ${formatDate(item.due)}</span>` : ''}
+              <span class="action-tag ${item.status === 'open' ? 'tag-open' : 'tag-closed'}">${item.status === 'open' ? 'Open' : 'Closed'}</span>
+            </div>
+          </div>
+          <button class="btn btn-danger btn-small" onclick="deleteAction(${item.id})">Remove</button>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+// ─── Reports ──────────────────────────────────────────────────────────────────
+function getDefaultReports() {
+  return [
+    { id: 1, name: 'Campaign Engagement', type: 'Email & Push', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_engagement_report_Jul13.html', date: '2026-07-13' },
+    { id: 2, name: 'Campaign Incrementality', type: 'Incrementality', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_incrementality_report_Jul13.html', date: '2026-07-13' },
+    { id: 3, name: 'Engagement Overview', type: 'Email & Push', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_engagement_report.html', date: '2026-06-29' },
+    { id: 4, name: 'Campaign Incrementality', type: 'Incrementality', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_incrementality_report.html', date: '2026-06-29' }
+  ];
+}
+
+function addReport() {
+  const name = document.getElementById('rpt-name').value.trim();
+  const type = document.getElementById('rpt-type').value;
+  const url = document.getElementById('rpt-url').value.trim();
+  const date = document.getElementById('rpt-date').value;
+  if (!name || !url || !date) { showStatus('Please fill in all fields', false); return; }
+  const report = { id: Date.now(), name, type, url, date };
+  reports.push(report);
+  localStorage.setItem('crm_reports', JSON.stringify(reports));
+  document.getElementById('rpt-name').value = '';
+  document.getElementById('rpt-url').value = '';
+  document.getElementById('add-report-form').classList.add('hidden');
+  renderReports();
+  showStatus('Report added', true);
+  setTimeout(() => showStatus('', false), 2000);
+}
+
+function deleteReport(id) {
+  if (!confirm('Remove this report?')) return;
+  reports = reports.filter(r => r.id != id);
+  localStorage.setItem('crm_reports', JSON.stringify(reports));
+  renderReports();
+}
+
+function renderReports() {
+  const list = document.getElementById('reports-list');
+  if (!reports.length) { list.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-3);font-size:13px">No reports yet.</div>`; return; }
+  const sorted = [...reports].sort((a, b) => b.date.localeCompare(a.date));
+  const latest = sorted[0].date;
+  const latestReports = sorted.filter(r => r.date === latest);
+  const archiveReports = sorted.filter(r => r.date !== latest);
+  let html = `<div style="font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Latest · Week of ${formatDate(latest)}</div>`;
+  html += `<div class="dash-grid" style="margin-bottom:1.5rem">`;
+  latestReports.forEach(r => {
+    html += `<div style="position:relative">
+      <a class="dash-card" href="${r.url}" target="_blank">
+        <div class="dash-card-eyebrow">${r.type}</div>
+        <div class="dash-card-title">${r.name}</div>
+        <div class="dash-card-desc">Week of ${formatDate(r.date)}</div>
+        <div class="dash-arrow">→</div>
+      </a>
+      <button onclick="deleteReport(${r.id})" style="position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-3);opacity:.5" title="Remove">✕</button>
+    </div>`;
+  });
+  html += `</div>`;
+  if (archiveReports.length) {
+    const archiveGrouped = {};
+    archiveReports.forEach(r => { if (!archiveGrouped[r.date]) archiveGrouped[r.date] = []; archiveGrouped[r.date].push(r); });
+    html += `<div style="font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Archive</div>`;
+    Object.keys(archiveGrouped).sort((a,b) => b.localeCompare(a)).forEach(date => {
+      html += `<div style="font-size:11px;color:var(--text-3);margin-bottom:6px">${formatDate(date)}</div>`;
+      html += `<div class="dash-grid" style="margin-bottom:1rem;opacity:.55">`;
+      archiveGrouped[date].forEach(r => {
+        html += `<div style="position:relative">
+          <a class="dash-card" href="${r.url}" target="_blank">
+            <div class="dash-card-eyebrow">${r.type}</div>
+            <div class="dash-card-title">${r.name}</div>
+            <div class="dash-card-desc">Week of ${formatDate(r.date)}</div>
+            <div class="dash-arrow">→</div>
+          </a>
+          <button onclick="deleteReport(${r.id})" style="position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-3);opacity:.5" title="Remove">✕</button>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+  }
+  list.innerHTML = html;
+}
+
+// ─── History ──────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const sortedWeeks = Object.keys(weeks).sort((a, b) => b.localeCompare(a));
+  if (sortedWeeks.length === 0) { list.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-3);font-size:13px">No saved weeks yet.</div>`; return; }
+  list.innerHTML = sortedWeeks.map(week => {
+    const data = weeks[week];
+    const weekActions = actionItems.filter(a => a.week === week);
+    const openCount = weekActions.filter(a => a.status === 'open').length;
+    const closedCount = weekActions.filter(a => a.status === 'closed').length;
+    return `
+    <div class="history-week">
+      <div class="history-week-title">Week of ${formatDate(week)}
+        <div style="display:flex;gap:6px">
+          ${openCount > 0 ? `<span class="action-tag tag-open">${openCount} open</span>` : ''}
+          ${closedCount > 0 ? `<span class="action-tag tag-closed">${closedCount} closed</span>` : ''}
+          <button class="btn btn-secondary btn-small" onclick="document.getElementById('weekDate').value='${week}';loadWeek();switchTab('update')">Load week</button>
+        </div>
+      </div>
+      ${data.highlights?.length ? `<div class="history-section"><div class="history-section-label">✅ Highlights</div><div class="history-items">${data.highlights.map(h => `<div class="history-item">${h}</div>`).join('')}</div></div>` : ''}
+      ${data.lowlights?.length ? `<div class="history-section"><div class="history-section-label">⚠ Lowlights</div><div class="history-items">${data.lowlights.map(l => `<div class="history-item">${l}</div>`).join('')}</div></div>` : ''}
+      ${data.plan?.length ? `<div class="history-section"><div class="history-section-label">📋 Next week plan</div><div class="history-items">${data.plan.map(p => `<div class="history-item">${p}</div>`).join('')}</div></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ─── Calendar ─────────────────────────────────────────────────────────────────
+const CAL_SHEET_ID = '1ADY2-cCMYYPEr5QW3MFBsAzRZW-4ZGHxJBCvugEAyJo';
+let calCampaigns = [];
+let calWeekOffset = 0;
+let calCountryFilter = 'all';
+let calLoaded = false;
+
+async function loadCalendar() {
+  if (calLoaded) { renderCalendar(); return; }
+  document.getElementById('cal-loading').classList.remove('hidden');
+  document.getElementById('cal-content').classList.add('hidden');
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${CAL_SHEET_ID}/gviz/tq?tqx=out:json`;
+    const res = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/)[1]);
+    const rows = json.table.rows;
+    const cols = json.table.cols.map(c => c.label);
+    calCampaigns = rows.map(row => {
+      const obj = {};
+      cols.forEach((col, i) => { obj[col] = row.c[i] ? (row.c[i].f || row.c[i].v || '') : ''; });
+      return obj;
+    }).filter(r => r['Campaign Name'] || r['Campaign Date']);
+    calLoaded = true;
+    document.getElementById('cal-loading').classList.add('hidden');
+    document.getElementById('cal-content').classList.remove('hidden');
+  } catch(e) {
+    document.getElementById('cal-loading').textContent = '⚠ Could not load campaigns. Make sure the Google Sheet is shared publicly.';
+    return;
+  }
+  renderCalendar();
+}
+
+function calNav(dir) { calWeekOffset += dir; renderCalendar(); }
+function calToday() { calWeekOffset = 0; renderCalendar(); }
+function calFilter(f, el) {
+  calCountryFilter = f;
+  document.querySelectorAll('[id^="cal-filter-"]').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderCalendar();
+}
+
+function getWeekRange(offset) {
+  const today = new Date();
+  const day = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+  monday.setHours(0,0,0,0);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23,59,59,999);
+  return { monday, sunday };
+}
+
+function renderCalendar() {
+  const { monday, sunday } = getWeekRange(calWeekOffset);
+  const label = `${monday.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${sunday.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`;
+  document.getElementById('cal-week-label').textContent = label;
+  let filtered = calCampaigns.filter(c => {
+    const d = parseCalDate(c['Campaign Date']);
+    if (!d) return false;
+    return d >= monday && d <= sunday;
+  });
+  if (calCountryFilter === 'alb') filtered = filtered.filter(c => !String(c['Country']||'').toUpperCase().includes('XKX'));
+  if (calCountryFilter === 'xkx') filtered = filtered.filter(c => String(c['Country']||'').toUpperCase().includes('XKX'));
+  const content = document.getElementById('cal-content');
+  if (!filtered.length) { content.innerHTML = `<div class="cal-empty">No campaigns found for this week.</div>`; return; }
+  const alb = filtered.filter(c => !String(c['Country']||'').toUpperCase().includes('XKX'));
+  const xkx = filtered.filter(c => String(c['Country']||'').toUpperCase().includes('XKX'));
+  let html = '';
+  if (calCountryFilter !== 'xkx' && alb.length) {
+    html += `<div class="cal-country-block"><div class="cal-country-hdr alb">🇦🇱 Albania (ALB) — ${alb.length} campaign${alb.length!==1?'s':''}</div>${alb.map(c => renderCampaignRow(c)).join('')}</div>`;
+  }
+  if (calCountryFilter !== 'alb' && xkx.length) {
+    html += `<div class="cal-country-block"><div class="cal-country-hdr xkx">🇽🇰 Kosovo (XKX) — ${xkx.length} campaign${xkx.length!==1?'s':''}</div>${xkx.map(c => renderCampaignRow(c)).join('')}</div>`;
+  }
+  if (!html) html = `<div class="cal-empty">No campaigns found for selected country this week.</div>`;
+  content.innerHTML = html;
+}
+
+function renderCampaignRow(c) {
+  const status = String(c['Status']||'planned').toLowerCase();
+  const statusClass = status.includes('complet') ? 'completed' : status.includes('live') ? 'live' : 'planned';
+  const statusLabel = status.includes('complet') ? 'Completed' : status.includes('live') ? 'Live' : 'Planned';
+  const channels = String(c['Channel Type']||'').split(',').map(ch => {
+    ch = ch.trim().toLowerCase();
+    if (ch.includes('email')) return '📧 Email';
+    if (ch.includes('push')) return '🔔 Push';
+    if (ch.includes('in-app')||ch.includes('inapp')) return '📱 In-app';
+    return ch;
+  }).filter(Boolean).join(' · ');
+  const date = parseCalDate(c['Campaign Date']);
+  const dateStr = date ? date.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
+  const desc = c['Intro/ Short Description'] || c['Description'] || '';
+  return `<div class="cal-campaign ${statusClass}">
+    <div class="cal-date">${dateStr}</div>
+    <div class="cal-body">
+      <div class="cal-name">${c['Campaign Name']||'—'}</div>
+      <div class="cal-meta">
+        ${c['City'] ? `<span class="cal-tag">📍 ${c['City']}</span>` : ''}
+        ${c['Category'] ? `<span class="cal-tag">${c['Category']}</span>` : ''}
+        ${channels ? `<span class="cal-tag">${channels}</span>` : ''}
+        ${c['Target Audience'] ? `<span class="cal-tag">👥 ${c['Target Audience']}</span>` : ''}
+        <span class="cal-status ${statusClass}">${statusLabel}</span>
+      </div>
+      ${desc ? `<div style="font-size:12px;color:var(--text-3);margin-top:4px">${desc}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function parseCalDate(val) {
+  if (!val) return null;
+  const s = String(val);
+  const parts = s.split('/');
+  if (parts.length === 3) {
+    let year = parseInt(parts[2]);
+    if (year < 100) year += 2000;
+    return new Date(year, parseInt(parts[1])-1, parseInt(parts[0]));
+  }
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function showStatus(msg, success) {
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+  el.style.color = success ? 'var(--green)' : 'var(--text-3)';
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+</script>
+</body>
+</html>
 
 let currentWeek = '';
 let actionItems = [];
