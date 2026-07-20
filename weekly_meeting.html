@@ -371,19 +371,28 @@ window.onload = async () => {
   showStatus('', false);
 };
 
+async function apiGet(action, data = {}) {
+  const params = Object.keys(data).length 
+    ? `?action=${action}&data=${encodeURIComponent(JSON.stringify(data))}`
+    : `?action=${action}`;
+  const res = await fetch(API + params, { mode: 'cors', redirect: 'follow' });
+  const text = await res.text();
+  try { return JSON.parse(text); } catch(e) { return { success: false }; }
+}
+
 async function fetchAll() {
   try {
     const [weeksRes, actionsRes, reportsRes] = await Promise.all([
-      fetch(`${API}?action=getWeeks`).then(r => r.json()),
-      fetch(`${API}?action=getActions`).then(r => r.json()),
-      fetch(`${API}?action=getReports`).then(r => r.json())
+      apiGet('getWeeks'),
+      apiGet('getActions'),
+      apiGet('getReports')
     ]);
     if (weeksRes.success) weeks = weeksRes.weeks;
     if (actionsRes.success) actionItems = actionsRes.actions;
     if (reportsRes.success) reports = reportsRes.reports;
     else reports = getDefaultReports();
   } catch(e) {
-    showStatus('Could not load data from Google Sheets', false);
+    showStatus('Working offline', false);
     reports = getDefaultReports();
   }
 }
@@ -503,9 +512,7 @@ function addQuickAction(value = '') {
 }
 
 async function apiCall(action, data = {}) {
-  const params = `?action=${action}&data=${encodeURIComponent(JSON.stringify(data))}`;
-  const res = await fetch(API + params);
-  return res.json();
+  return apiGet(action, data);
 }
 
 async function saveWeek() {
