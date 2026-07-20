@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly CRM Performance Update — ALB & XKX</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f7f7f5; --surface: #ffffff; --surface-2: #f2f1ee;
+    --text: #0b0b0b; --text-2: #52514e; --text-3: #898781;
+    --border: rgba(11,11,11,0.10); --border-strong: rgba(11,11,11,0.18);
+    --radius: 8px;
+    --green: #0ca30c; --green-bg: #eaf3de; --green-text: #3b6d11;
+    --red: #e34948; --red-bg: #fcebeb; --red-text: #a32d2d;
+    --yellow: #eda100; --yellow-bg: #faeeda; --yellow-text: #854f0b;
+    --blue: #2a78d6; --blue-bg: #deeaf9; --blue-text: #1a4f8a;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; }
+  .page { max-width: 900px; margin: 0 auto; padding: 2.5rem 2rem 4rem; }
+
+  /* Header */
+  header { border-bottom: 1px solid var(--border-strong); padding-bottom: 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; }
+  .header-left .eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin-bottom: .4rem; }
+  header h1 { font-size: 24px; font-weight: 600; letter-spacing: -.02em; }
+  .week-selector { display: flex; align-items: center; gap: 8px; }
+  .week-selector label { font-size: 12px; color: var(--text-3); }
+  .week-selector input[type="date"] { font-size: 13px; padding: 6px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); cursor: pointer; }
+  .btn { font-size: 13px; font-weight: 500; padding: 7px 14px; border-radius: var(--radius); cursor: pointer; border: none; transition: opacity .15s; }
+  .btn:hover { opacity: .85; }
+  .btn-primary { background: var(--text); color: #fff; }
+  .btn-secondary { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border-strong); }
+  .btn-small { font-size: 11px; padding: 4px 10px; }
+  .btn-danger { background: var(--red-bg); color: var(--red-text); border: 1px solid #f09595; }
+
+  /* Nav tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 2rem; border-bottom: 1px solid var(--border); }
+  .tab { font-size: 13px; font-weight: 500; padding: 8px 16px; cursor: pointer; border: none; background: none; color: var(--text-3); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--text); }
+
+  /* Sections */
+  .section { margin-bottom: 2rem; }
+  .section-label { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text-3); margin-bottom: .75rem; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+  /* HL grid */
+  .hl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .hl-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .hl-card.highlight { border-left: 3px solid var(--green); }
+  .hl-card.lowlight { border-left: 3px solid var(--red); }
+  .hl-card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+  .hl-card.highlight .hl-card-title { color: var(--green-text); }
+  .hl-card.lowlight .hl-card-title { color: var(--red-text); }
+  .hl-item { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+  .hl-item textarea { flex: 1; font-size: 13px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; resize: none; font-family: inherit; background: var(--bg); color: var(--text); min-height: 60px; }
+  .hl-item textarea:focus { outline: none; border-color: var(--blue); }
+  .hl-remove { background: none; border: none; cursor: pointer; color: var(--text-3); font-size: 16px; padding: 4px; line-height: 1; }
+  .hl-remove:hover { color: var(--red); }
+  .add-item-btn { font-size: 12px; color: var(--blue); background: none; border: none; cursor: pointer; padding: 2px 0; margin-top: 4px; }
+  .add-item-btn:hover { text-decoration: underline; }
+
+  /* Next week plan */
+  .plan-item { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+  .plan-item input[type="text"] { flex: 1; font-size: 13px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; background: var(--bg); color: var(--text); }
+  .plan-item input:focus { outline: none; border-color: var(--blue); }
+
+  /* Action items */
+  .actions-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  .filter-tabs { display: flex; gap: 6px; }
+  .filter-tab { font-size: 11px; padding: 3px 10px; border-radius: 20px; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text-3); }
+  .filter-tab.active { background: var(--text); color: #fff; border-color: var(--text); }
+
+  .week-group { margin-bottom: 1.5rem; }
+  .week-group-header { font-size: 12px; font-weight: 600; color: var(--text-3); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .week-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: var(--surface-2); color: var(--text-3); }
+
+  .action-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 12px; }
+  .action-item.done { opacity: .6; }
+  .action-check { width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--border-strong); cursor: pointer; flex-shrink: 0; margin-top: 2px; appearance: none; -webkit-appearance: none; background: var(--surface); }
+  .action-check:checked { background: var(--green); border-color: var(--green); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; }
+  .action-body { flex: 1; }
+  .action-text { font-size: 13px; color: var(--text); margin-bottom: 4px; }
+  .action-item.done .action-text { text-decoration: line-through; color: var(--text-3); }
+  .action-meta { display: flex; gap: 10px; flex-wrap: wrap; }
+  .action-tag { font-size: 11px; padding: 1px 8px; border-radius: 4px; }
+  .tag-owner { background: var(--blue-bg); color: var(--blue-text); }
+  .tag-due { background: var(--yellow-bg); color: var(--yellow-text); }
+  .tag-week { background: var(--surface-2); color: var(--text-3); }
+  .tag-open { background: var(--yellow-bg); color: var(--yellow-text); }
+  .tag-closed { background: var(--green-bg); color: var(--green-text); }
+
+  .new-action-form { background: var(--surface); border: 1px dashed var(--border-strong); border-radius: var(--radius); padding: 14px; margin-top: 12px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .form-row.single { grid-template-columns: 1fr; }
+  .form-field label { font-size: 11px; color: var(--text-3); display: block; margin-bottom: 4px; }
+  .form-field input, .form-field select, .form-field textarea { width: 100%; font-size: 13px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; background: var(--bg); color: var(--text); }
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus { outline: none; border-color: var(--blue); }
+  .form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* Dashboard links */
+  .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .dash-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; text-decoration: none; display: block; transition: box-shadow .15s, transform .15s; }
+  .dash-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-1px); }
+  .dash-card-eyebrow { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
+  .dash-card-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .dash-card-desc { font-size: 12px; color: var(--text-2); }
+  .dash-arrow { float: right; color: var(--text-3); margin-top: -20px; }
+
+  /* History tab */
+  .history-week { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; }
+  .history-week-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .history-section { margin-bottom: 10px; }
+  .history-section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); margin-bottom: 5px; }
+  .history-items { font-size: 13px; color: var(--text-2); }
+  .history-item { padding: 3px 0; border-bottom: 1px solid var(--border); }
+  .history-item:last-child { border-bottom: none; }
+
+  /* Save bar */
+  .save-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 12px 2rem; display: flex; justify-content: space-between; align-items: center; gap: 12px; z-index: 100; }
+  .save-bar-left { font-size: 13px; color: var(--text-2); }
+  .save-status { font-size: 12px; color: var(--green-text); }
+
+  .hidden { display: none; }
+
+  /* Calendar */
+  .cal-country-block { margin-bottom:1.5rem; }
+  .cal-country-hdr { font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding-bottom:5px;border-bottom:2px solid;margin-bottom:10px; }
+  .cal-country-hdr.alb { color:var(--blue);border-color:var(--blue); }
+  .cal-country-hdr.xkx { color:var(--green);border-color:var(--green); }
+  .cal-campaign { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px; }
+  .cal-campaign.planned { border-left:3px solid #6b9fd4; }
+  .cal-campaign.live { border-left:3px solid var(--green); }
+  .cal-campaign.completed { border-left:3px solid #c0c0bc;opacity:.7; }
+  .cal-date { font-size:11px;font-weight:600;color:var(--text-3);min-width:50px;padding-top:2px; }
+  .cal-body { flex:1; }
+  .cal-name { font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px; }
+  .cal-meta { display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--text-3); }
+  .cal-tag { padding:1px 7px;border-radius:4px;background:var(--surface-2);border:0.5px solid var(--border); }
+  .cal-status { padding:1px 7px;border-radius:4px;font-size:11px;font-weight:500; }
+  .cal-status.planned { background:#deeaf9;color:#1a4f8a; }
+  .cal-status.live { background:var(--green-bg);color:var(--green-text); }
+  .cal-status.completed { background:#f2f1ee;color:#898781; }
+  .cal-empty { text-align:center;padding:2rem;color:var(--text-3);font-size:13px; }
+
+  footer { margin-bottom: 5rem; }
+
+  @media (max-width: 600px) {
+    .hl-grid, .dash-grid, .form-row { grid-template-columns: 1fr; }
+    header { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="header-left">
+      <div class="eyebrow">CRM Weekly Update · ALB & XKX</div>
+      <h1>Performance Meeting Template</h1>
+    </div>
+    <div class="week-selector">
+      <label>Week of</label>
+      <input type="date" id="weekDate">
+      <button class="btn btn-secondary" onclick="loadWeek()">Load</button>
+      <button class="btn btn-primary" onclick="saveWeek()">Save week</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('update')">Weekly Update</button>
+    <button class="tab" onclick="switchTab('actions')">Action Items</button>
+    <button class="tab" onclick="switchTab('dashboards')">Dashboards</button>
+    <button class="tab" onclick="switchTab('calendar')">Campaign Calendar</button>
+    <button class="tab" onclick="switchTab('history')">History</button>
+  </div>
+
+  <!-- WEEKLY UPDATE TAB -->
+  <div id="tab-update">
+
+    <div class="section">
+      <div class="section-label">Highlights & Lowlights</div>
+      <div class="hl-grid">
+        <div class="hl-card highlight">
+          <div class="hl-card-title">✅ Highlights</div>
+          <div id="highlights-list"></div>
+          <button class="add-item-btn" onclick="addHL('highlight')">+ Add highlight</button>
+        </div>
+        <div class="hl-card lowlight">
+          <div class="hl-card-title">⚠ Lowlights</div>
+          <div id="lowlights-list"></div>
+          <button class="add-item-btn" onclick="addHL('lowlight')">+ Add lowlight</button>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section">
+      <div class="section-label">Next Week Plan</div>
+      <div id="plan-list"></div>
+      <button class="add-item-btn" onclick="addPlan()">+ Add item</button>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section">
+      <div class="section-label">Quick action items from this meeting</div>
+      <div id="quick-actions-list"></div>
+      <button class="add-item-btn" onclick="addQuickAction()">+ Add action item</button>
+      <p style="font-size:12px;color:var(--text-3);margin-top:8px">These will be added to the Action Items tracker when you save.</p>
+    </div>
+
+  </div>
+
+  <!-- ACTION ITEMS TAB -->
+  <div id="tab-actions" class="hidden">
+
+    <div class="actions-header">
+      <div class="section-label" style="margin:0">All action items</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="filter-tabs">
+          <button class="filter-tab active" onclick="filterActions('all', this)">All</button>
+          <button class="filter-tab" onclick="filterActions('open', this)">Open</button>
+          <button class="filter-tab" onclick="filterActions('closed', this)">Closed</button>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="toggleNewActionForm()">+ New item</button>
+      </div>
+    </div>
+
+    <div id="action-items-list"></div>
+
+    <div id="new-action-form" class="new-action-form hidden">
+      <div class="form-row single">
+        <div class="form-field">
+          <label>Action item</label>
+          <textarea id="new-action-text" rows="2" placeholder="Describe the action item..."></textarea>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Owner</label>
+          <input type="text" id="new-action-owner" placeholder="e.g. Razvan">
+        </div>
+        <div class="form-field">
+          <label>Due date</label>
+          <input type="date" id="new-action-due">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary btn-small" onclick="toggleNewActionForm()">Cancel</button>
+        <button class="btn btn-primary btn-small" onclick="addActionItem()">Add item</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DASHBOARDS TAB -->
+  <div id="tab-dashboards" class="hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+      <div class="section-label" style="margin:0">Latest reports</div>
+      <button class="btn btn-secondary btn-small" onclick="document.getElementById('add-report-form').classList.toggle('hidden')">+ Add report</button>
+    </div>
+
+    <!-- Add report form -->
+    <div id="add-report-form" class="hidden" style="background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--radius);padding:14px;margin-bottom:1rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">Report name</label>
+          <input type="text" id="rpt-name" placeholder="e.g. Campaign Incrementality" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;background:var(--surface);color:var(--text)">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">Type</label>
+          <select id="rpt-type" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;background:var(--surface);color:var(--text)">
+            <option value="Incrementality">Incrementality</option>
+            <option value="Email & Push">Email & Push</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">URL</label>
+          <input type="text" id="rpt-url" placeholder="https://razvanpetcu-wolt.github.io/crm-reports/..." style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;background:var(--surface);color:var(--text)">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">Week of</label>
+          <input type="date" id="rpt-date" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;background:var(--surface);color:var(--text)">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-secondary btn-small" onclick="document.getElementById('add-report-form').classList.add('hidden')">Cancel</button>
+        <button class="btn btn-primary btn-small" onclick="addReport()">Add report</button>
+      </div>
+    </div>
+
+    <div id="reports-list"></div>
+  </div>
+
+  <!-- CAMPAIGN CALENDAR TAB -->
+  <div id="tab-calendar" class="hidden">
+
+    <!-- Controls -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-secondary btn-small" onclick="calNav(-1)">← Prev</button>
+        <span id="cal-week-label" style="font-size:13px;font-weight:500;color:var(--text-2);min-width:160px;text-align:center"></span>
+        <button class="btn btn-secondary btn-small" onclick="calNav(1)">Next →</button>
+        <button class="btn btn-secondary btn-small" onclick="calToday()">Today</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span style="font-size:12px;color:var(--text-3)">Country:</span>
+        <button class="ftab active" id="cal-filter-all" onclick="calFilter('all',this)">All</button>
+        <button class="ftab" id="cal-filter-alb" onclick="calFilter('alb',this)">ALB</button>
+        <button class="ftab" id="cal-filter-xkx" onclick="calFilter('xkx',this)">XKX</button>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div style="display:flex;gap:14px;margin-bottom:1rem;flex-wrap:wrap;font-size:12px;color:var(--text-3)">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#c9d8f0;flex-shrink:0"></span>Planned</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#b8e6b8;flex-shrink:0"></span>Live</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#e0e0de;flex-shrink:0"></span>Completed</span>
+      <span style="display:flex;align-items:center;gap:5px">📧 Email &nbsp; 🔔 Push &nbsp; 📱 In-app</span>
+    </div>
+
+    <div id="cal-loading" style="text-align:center;padding:2rem;color:var(--text-3);font-size:13px">Loading campaigns...</div>
+    <div id="cal-content" class="hidden"></div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="tab-history" class="hidden">
+    <div class="section-label">Previous weeks</div>
+    <div id="history-list"></div>
+  </div>
+
+  <footer></footer>
+</div>
+
+<div class="save-bar">
+  <div class="save-bar-left">Weekly CRM Performance Update · ALB & XKX</div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span class="save-status" id="save-status"></span>
+    <button class="btn btn-secondary btn-small" onclick="clearWeek()">Clear week</button>
+    <button class="btn btn-primary" onclick="saveWeek()">Save week</button>
+  </div>
+</div>
+
+
+<script>
+let currentWeek = '';
+let actionItems = [];
+let weeks = {};
+let reports = [];
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+window.onload = () => {
+  weeks = JSON.parse(localStorage.getItem('crm_weeks') || '{}');
+  actionItems = JSON.parse(localStorage.getItem('crm_actions') || '[]');
+  reports = JSON.parse(localStorage.getItem('crm_reports') || 'null') || getDefaultReports();
+
+  const today = new Date();
+  const day = today.getDay();
+  const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(today); monday.setDate(diff);
+  currentWeek = monday.toISOString().split('T')[0];
+  document.getElementById('weekDate').value = currentWeek;
+  document.getElementById('rpt-date').value = currentWeek;
+
+  loadWeek();
+  renderActionItems('all');
+  renderHistory();
+  renderReports();
+};
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  ['update','actions','dashboards','calendar','history'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['update','actions','dashboards','calendar','history'][i] === tab);
+  });
+  if (tab === 'history') renderHistory();
+  if (tab === 'actions') renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
+  if (tab === 'calendar') loadCalendar();
+}
+
+// ─── Highlights / Lowlights ───────────────────────────────────────────────────
+function addHL(type, value = '') {
+  const list = document.getElementById(type === 'highlight' ? 'highlights-list' : 'lowlights-list');
+  const div = document.createElement('div');
+  div.className = 'hl-item';
+  div.innerHTML = `<textarea placeholder="Add a ${type}...">${value}</textarea><button class="hl-remove" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(div);
+}
+
+function addPlan(value = '') {
+  const list = document.getElementById('plan-list');
+  const div = document.createElement('div');
+  div.className = 'plan-item';
+  div.innerHTML = `<input type="text" placeholder="Plan item for next week..." value="${value}"><button class="hl-remove" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(div);
+}
+
+function addQuickAction(value = '') {
+  const list = document.getElementById('quick-actions-list');
+  const div = document.createElement('div');
+  div.className = 'plan-item';
+  div.innerHTML = `<input type="text" placeholder="Action item..." value="${value}"><button class="hl-remove" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(div);
+}
+
+// ─── Save week ────────────────────────────────────────────────────────────────
+function saveWeek() {
+  const week = document.getElementById('weekDate').value || currentWeek;
+  currentWeek = week;
+  const highlights = [...document.querySelectorAll('#highlights-list textarea')].map(t => t.value).filter(Boolean);
+  const lowlights = [...document.querySelectorAll('#lowlights-list textarea')].map(t => t.value).filter(Boolean);
+  const plan = [...document.querySelectorAll('#plan-list input')].map(t => t.value).filter(Boolean);
+  const quickActions = [...document.querySelectorAll('#quick-actions-list input')].map(t => t.value).filter(Boolean);
+
+  weeks[week] = { highlights, lowlights, plan };
+  localStorage.setItem('crm_weeks', JSON.stringify(weeks));
+
+  quickActions.forEach(text => {
+    const item = { id: Date.now() + Math.random(), text, owner: '', due: '', week, status: 'open', created: new Date().toISOString() };
+    actionItems.push(item);
+  });
+  localStorage.setItem('crm_actions', JSON.stringify(actionItems));
+
+  document.getElementById('quick-actions-list').innerHTML = '';
+  showStatus('Saved ' + formatDate(week), true);
+  setTimeout(() => showStatus('', false), 3000);
+  renderHistory();
+  renderActionItems('all');
+}
+
+// ─── Load week ────────────────────────────────────────────────────────────────
+function loadWeek() {
+  const week = document.getElementById('weekDate').value || currentWeek;
+  currentWeek = week;
+  document.getElementById('highlights-list').innerHTML = '';
+  document.getElementById('lowlights-list').innerHTML = '';
+  document.getElementById('plan-list').innerHTML = '';
+  document.getElementById('quick-actions-list').innerHTML = '';
+  const data = weeks[week];
+  if (data) {
+    (data.highlights || []).forEach(h => addHL('highlight', h));
+    (data.lowlights || []).forEach(l => addHL('lowlight', l));
+    (data.plan || []).forEach(p => addPlan(p));
+  }
+}
+
+function clearWeek() {
+  if (!confirm('Clear all content for this week?')) return;
+  ['highlights-list','lowlights-list','plan-list','quick-actions-list'].forEach(id => document.getElementById(id).innerHTML = '');
+}
+
+// ─── Action items ─────────────────────────────────────────────────────────────
+function toggleNewActionForm() {
+  document.getElementById('new-action-form').classList.toggle('hidden');
+}
+
+function addActionItem() {
+  const text = document.getElementById('new-action-text').value.trim();
+  if (!text) return;
+  const item = { id: Date.now(), text, owner: document.getElementById('new-action-owner').value.trim(), due: document.getElementById('new-action-due').value, week: document.getElementById('weekDate').value || currentWeek, status: 'open', created: new Date().toISOString() };
+  actionItems.push(item);
+  localStorage.setItem('crm_actions', JSON.stringify(actionItems));
+  document.getElementById('new-action-text').value = '';
+  document.getElementById('new-action-owner').value = '';
+  document.getElementById('new-action-due').value = '';
+  document.getElementById('new-action-form').classList.add('hidden');
+  renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
+}
+
+function toggleActionStatus(id) {
+  const item = actionItems.find(a => a.id == id);
+  if (item) {
+    item.status = item.status === 'open' ? 'closed' : 'open';
+    localStorage.setItem('crm_actions', JSON.stringify(actionItems));
+    renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
+  }
+}
+
+function deleteAction(id) {
+  if (!confirm('Remove this action item?')) return;
+  actionItems = actionItems.filter(a => a.id != id);
+  localStorage.setItem('crm_actions', JSON.stringify(actionItems));
+  renderActionItems(document.querySelector('.filter-tab.active')?.textContent?.toLowerCase() || 'all');
+}
+
+function filterActions(filter, el) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderActionItems(filter);
+}
+
+function renderActionItems(filter) {
+  const list = document.getElementById('action-items-list');
+  let items = filter === 'all' ? actionItems : actionItems.filter(a => a.status === filter);
+  if (items.length === 0) { list.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-3);font-size:13px">No action items yet.</div>`; return; }
+  const grouped = {};
+  items.forEach(item => { const w = item.week || 'Unknown'; if (!grouped[w]) grouped[w] = []; grouped[w].push(item); });
+  const sortedWeeks = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+  list.innerHTML = sortedWeeks.map(week => `
+    <div class="week-group">
+      <div class="week-group-header">Week of ${formatDate(week)}<span class="week-badge">${grouped[week].length} item${grouped[week].length !== 1 ? 's' : ''}</span></div>
+      ${grouped[week].map(item => `
+        <div class="action-item ${item.status === 'closed' ? 'done' : ''}">
+          <input type="checkbox" class="action-check" ${item.status === 'closed' ? 'checked' : ''} onchange="toggleActionStatus(${item.id})">
+          <div class="action-body">
+            <div class="action-text">${item.text}</div>
+            <div class="action-meta">
+              ${item.owner ? `<span class="action-tag tag-owner">👤 ${item.owner}</span>` : ''}
+              ${item.due ? `<span class="action-tag tag-due">📅 ${formatDate(item.due)}</span>` : ''}
+              <span class="action-tag ${item.status === 'open' ? 'tag-open' : 'tag-closed'}">${item.status === 'open' ? 'Open' : 'Closed'}</span>
+            </div>
+          </div>
+          <button class="btn btn-danger btn-small" onclick="deleteAction(${item.id})">Remove</button>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+// ─── Reports ──────────────────────────────────────────────────────────────────
+function getDefaultReports() {
+  return [
+    { id: 1, name: 'Campaign Engagement', type: 'Email & Push', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_engagement_report_Jul13.html', date: '2026-07-13' },
+    { id: 2, name: 'Campaign Incrementality', type: 'Incrementality', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_incrementality_report_Jul13.html', date: '2026-07-13' },
+    { id: 3, name: 'Engagement Overview', type: 'Email & Push', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_engagement_report.html', date: '2026-06-29' },
+    { id: 4, name: 'Campaign Incrementality', type: 'Incrementality', url: 'https://razvanpetcu-wolt.github.io/crm-reports/crm_incrementality_report.html', date: '2026-06-29' }
+  ];
+}
+
+function addReport() {
+  const name = document.getElementById('rpt-name').value.trim();
+  const type = document.getElementById('rpt-type').value;
+  const url = document.getElementById('rpt-url').value.trim();
+  const date = document.getElementById('rpt-date').value;
+  if (!name || !url || !date) { showStatus('Please fill in all fields', false); return; }
+  const report = { id: Date.now(), name, type, url, date };
+  reports.push(report);
+  localStorage.setItem('crm_reports', JSON.stringify(reports));
+  document.getElementById('rpt-name').value = '';
+  document.getElementById('rpt-url').value = '';
+  document.getElementById('add-report-form').classList.add('hidden');
+  renderReports();
+  showStatus('Report added', true);
+  setTimeout(() => showStatus('', false), 2000);
+}
+
+function deleteReport(id) {
+  if (!confirm('Remove this report?')) return;
+  reports = reports.filter(r => r.id != id);
+  localStorage.setItem('crm_reports', JSON.stringify(reports));
+  renderReports();
+}
+
+function renderReports() {
+  const list = document.getElementById('reports-list');
+  if (!reports.length) { list.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-3);font-size:13px">No reports yet.</div>`; return; }
+  const sorted = [...reports].sort((a, b) => b.date.localeCompare(a.date));
+  const latest = sorted[0].date;
+  const latestReports = sorted.filter(r => r.date === latest);
+  const archiveReports = sorted.filter(r => r.date !== latest);
+  let html = `<div style="font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Latest · Week of ${formatDate(latest)}</div>`;
+  html += `<div class="dash-grid" style="margin-bottom:1.5rem">`;
+  latestReports.forEach(r => {
+    html += `<div style="position:relative">
+      <a class="dash-card" href="${r.url}" target="_blank">
+        <div class="dash-card-eyebrow">${r.type}</div>
+        <div class="dash-card-title">${r.name}</div>
+        <div class="dash-card-desc">Week of ${formatDate(r.date)}</div>
+        <div class="dash-arrow">→</div>
+      </a>
+      <button onclick="deleteReport(${r.id})" style="position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-3);opacity:.5" title="Remove">✕</button>
+    </div>`;
+  });
+  html += `</div>`;
+  if (archiveReports.length) {
+    const archiveGrouped = {};
+    archiveReports.forEach(r => { if (!archiveGrouped[r.date]) archiveGrouped[r.date] = []; archiveGrouped[r.date].push(r); });
+    html += `<div style="font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Archive</div>`;
+    Object.keys(archiveGrouped).sort((a,b) => b.localeCompare(a)).forEach(date => {
+      html += `<div style="font-size:11px;color:var(--text-3);margin-bottom:6px">${formatDate(date)}</div>`;
+      html += `<div class="dash-grid" style="margin-bottom:1rem;opacity:.55">`;
+      archiveGrouped[date].forEach(r => {
+        html += `<div style="position:relative">
+          <a class="dash-card" href="${r.url}" target="_blank">
+            <div class="dash-card-eyebrow">${r.type}</div>
+            <div class="dash-card-title">${r.name}</div>
+            <div class="dash-card-desc">Week of ${formatDate(r.date)}</div>
+            <div class="dash-arrow">→</div>
+          </a>
+          <button onclick="deleteReport(${r.id})" style="position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-3);opacity:.5" title="Remove">✕</button>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+  }
+  list.innerHTML = html;
+}
+
+// ─── History ──────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const sortedWeeks = Object.keys(weeks).sort((a, b) => b.localeCompare(a));
+  if (sortedWeeks.length === 0) { list.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-3);font-size:13px">No saved weeks yet.</div>`; return; }
+  list.innerHTML = sortedWeeks.map(week => {
+    const data = weeks[week];
+    const weekActions = actionItems.filter(a => a.week === week);
+    const openCount = weekActions.filter(a => a.status === 'open').length;
+    const closedCount = weekActions.filter(a => a.status === 'closed').length;
+    return `
+    <div class="history-week">
+      <div class="history-week-title">Week of ${formatDate(week)}
+        <div style="display:flex;gap:6px">
+          ${openCount > 0 ? `<span class="action-tag tag-open">${openCount} open</span>` : ''}
+          ${closedCount > 0 ? `<span class="action-tag tag-closed">${closedCount} closed</span>` : ''}
+          <button class="btn btn-secondary btn-small" onclick="document.getElementById('weekDate').value='${week}';loadWeek();switchTab('update')">Load week</button>
+        </div>
+      </div>
+      ${data.highlights?.length ? `<div class="history-section"><div class="history-section-label">✅ Highlights</div><div class="history-items">${data.highlights.map(h => `<div class="history-item">${h}</div>`).join('')}</div></div>` : ''}
+      ${data.lowlights?.length ? `<div class="history-section"><div class="history-section-label">⚠ Lowlights</div><div class="history-items">${data.lowlights.map(l => `<div class="history-item">${l}</div>`).join('')}</div></div>` : ''}
+      ${data.plan?.length ? `<div class="history-section"><div class="history-section-label">📋 Next week plan</div><div class="history-items">${data.plan.map(p => `<div class="history-item">${p}</div>`).join('')}</div></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ─── Calendar ─────────────────────────────────────────────────────────────────
+const CAL_SHEET_ID = '1ADY2-cCMYYPEr5QW3MFBsAzRZW-4ZGHxJBCvugEAyJo';
+let calCampaigns = [];
+let calWeekOffset = 0;
+let calCountryFilter = 'all';
+let calLoaded = false;
+
+async function loadCalendar() {
+  if (calLoaded) { renderCalendar(); return; }
+  document.getElementById('cal-loading').classList.remove('hidden');
+  document.getElementById('cal-content').classList.add('hidden');
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${CAL_SHEET_ID}/gviz/tq?tqx=out:json`;
+    const res = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/)[1]);
+    const rows = json.table.rows;
+    const cols = json.table.cols.map(c => c.label);
+    calCampaigns = rows.map(row => {
+      const obj = {};
+      cols.forEach((col, i) => { obj[col] = row.c[i] ? (row.c[i].f || row.c[i].v || '') : ''; });
+      return obj;
+    }).filter(r => r['Campaign Name'] || r['Campaign Date']);
+    calLoaded = true;
+    document.getElementById('cal-loading').classList.add('hidden');
+    document.getElementById('cal-content').classList.remove('hidden');
+  } catch(e) {
+    document.getElementById('cal-loading').textContent = '⚠ Could not load campaigns. Make sure the Google Sheet is shared publicly.';
+    return;
+  }
+  renderCalendar();
+}
+
+function calNav(dir) { calWeekOffset += dir; renderCalendar(); }
+function calToday() { calWeekOffset = 0; renderCalendar(); }
+function calFilter(f, el) {
+  calCountryFilter = f;
+  document.querySelectorAll('[id^="cal-filter-"]').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderCalendar();
+}
+
+function getWeekRange(offset) {
+  const today = new Date();
+  const day = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+  monday.setHours(0,0,0,0);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23,59,59,999);
+  return { monday, sunday };
+}
+
+function renderCalendar() {
+  const { monday, sunday } = getWeekRange(calWeekOffset);
+  const label = `${monday.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${sunday.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`;
+  document.getElementById('cal-week-label').textContent = label;
+  let filtered = calCampaigns.filter(c => {
+    const d = parseCalDate(c['Campaign Date']);
+    if (!d) return false;
+    return d >= monday && d <= sunday;
+  });
+  if (calCountryFilter === 'alb') filtered = filtered.filter(c => !String(c['Country']||'').toUpperCase().includes('XKX'));
+  if (calCountryFilter === 'xkx') filtered = filtered.filter(c => String(c['Country']||'').toUpperCase().includes('XKX'));
+  const content = document.getElementById('cal-content');
+  if (!filtered.length) { content.innerHTML = `<div class="cal-empty">No campaigns found for this week.</div>`; return; }
+  const alb = filtered.filter(c => !String(c['Country']||'').toUpperCase().includes('XKX'));
+  const xkx = filtered.filter(c => String(c['Country']||'').toUpperCase().includes('XKX'));
+  let html = '';
+  if (calCountryFilter !== 'xkx' && alb.length) {
+    html += `<div class="cal-country-block"><div class="cal-country-hdr alb">🇦🇱 Albania (ALB) — ${alb.length} campaign${alb.length!==1?'s':''}</div>${alb.map(c => renderCampaignRow(c)).join('')}</div>`;
+  }
+  if (calCountryFilter !== 'alb' && xkx.length) {
+    html += `<div class="cal-country-block"><div class="cal-country-hdr xkx">🇽🇰 Kosovo (XKX) — ${xkx.length} campaign${xkx.length!==1?'s':''}</div>${xkx.map(c => renderCampaignRow(c)).join('')}</div>`;
+  }
+  if (!html) html = `<div class="cal-empty">No campaigns found for selected country this week.</div>`;
+  content.innerHTML = html;
+}
+
+function renderCampaignRow(c) {
+  const status = String(c['Status']||'planned').toLowerCase();
+  const statusClass = status.includes('complet') ? 'completed' : status.includes('live') ? 'live' : 'planned';
+  const statusLabel = status.includes('complet') ? 'Completed' : status.includes('live') ? 'Live' : 'Planned';
+  const channels = String(c['Channel Type']||'').split(',').map(ch => {
+    ch = ch.trim().toLowerCase();
+    if (ch.includes('email')) return '📧 Email';
+    if (ch.includes('push')) return '🔔 Push';
+    if (ch.includes('in-app')||ch.includes('inapp')) return '📱 In-app';
+    return ch;
+  }).filter(Boolean).join(' · ');
+  const date = parseCalDate(c['Campaign Date']);
+  const dateStr = date ? date.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
+  const desc = c['Intro/ Short Description'] || c['Description'] || '';
+  return `<div class="cal-campaign ${statusClass}">
+    <div class="cal-date">${dateStr}</div>
+    <div class="cal-body">
+      <div class="cal-name">${c['Campaign Name']||'—'}</div>
+      <div class="cal-meta">
+        ${c['City'] ? `<span class="cal-tag">📍 ${c['City']}</span>` : ''}
+        ${c['Category'] ? `<span class="cal-tag">${c['Category']}</span>` : ''}
+        ${channels ? `<span class="cal-tag">${channels}</span>` : ''}
+        ${c['Target Audience'] ? `<span class="cal-tag">👥 ${c['Target Audience']}</span>` : ''}
+        <span class="cal-status ${statusClass}">${statusLabel}</span>
+      </div>
+      ${desc ? `<div style="font-size:12px;color:var(--text-3);margin-top:4px">${desc}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function parseCalDate(val) {
+  if (!val) return null;
+  const s = String(val);
+  const parts = s.split('/');
+  if (parts.length === 3) {
+    let year = parseInt(parts[2]);
+    if (year < 100) year += 2000;
+    return new Date(year, parseInt(parts[1])-1, parseInt(parts[0]));
+  }
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function showStatus(msg, success) {
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+  el.style.color = success ? 'var(--green)' : 'var(--text-3)';
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+</script>
+</body>
+</html>
