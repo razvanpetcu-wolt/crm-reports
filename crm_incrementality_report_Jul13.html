@@ -30,7 +30,6 @@
   .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .alert-box { border-radius: var(--radius); padding: 12px 16px; font-size: 13px; margin-bottom: 1.5rem; display: flex; gap: 8px; align-items: flex-start; }
   .alert-info { background: #deeaf9; border: 1px solid #85b7eb; color: #1a4f8a; }
-  .alert-warn { background: var(--warn-bg); border: 1px solid #f0c060; color: var(--warn-text); }
   .section-label { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text-3); margin-bottom: .75rem; }
   .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
   .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
@@ -93,6 +92,7 @@
 <div class="page">
 
   <header>
+    <a href="index.html" style="font-size:12px;color:var(--text-3);text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:8px">← Back to dashboard</a>
     <div class="eyebrow">CRM Incrementality Report</div>
     <h1>Campaign Incrementality — Week of Jul 6, 2026</h1>
     <div class="subtitle">Treatment vs. control · Active campaigns · ALB and XKX</div>
@@ -146,8 +146,6 @@
   <!-- WEEK KPIs -->
   <section>
     <div class="section-label">Week summary</div>
-
-    <!-- Combined totals -->
     <div style="font-size:11px;font-weight:500;color:var(--text-3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Combined — ALB + XKX</div>
     <div class="kpi-grid" style="margin-bottom:1.5rem">
       <div class="kpi pos">
@@ -171,68 +169,34 @@
         <div class="kpi-sub">treatment group</div>
       </div>
     </div>
-
-    <!-- Per country split -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-
-      <!-- ALB -->
       <div>
         <div style="font-size:11px;font-weight:600;color:var(--alb);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;padding-bottom:4px;border-bottom:2px solid var(--alb)">Albania (ALB)</div>
         <div style="display:grid;gap:8px">
-          <div class="kpi neg alb">
-            <div class="kpi-label">Visa — inc. GOV</div>
-            <div class="kpi-value neg">-€2,433</div>
-            <div class="kpi-sub">In campaign · 270,834 exposed</div>
-          </div>
-          <div class="kpi neg">
-            <div class="kpi-label">Visa — inc. volume</div>
-            <div class="kpi-value neg">-11</div>
-            <div class="kpi-sub">incremental orders</div>
-          </div>
-          <div class="kpi pos">
-            <div class="kpi-label">Visa — inc. new Cx</div>
-            <div class="kpi-value pos">+52</div>
-            <div class="kpi-sub">only positive signal</div>
-          </div>
+          <div class="kpi neg"><div class="kpi-label">Visa — inc. GOV</div><div class="kpi-value neg">-€2,433</div><div class="kpi-sub">In campaign · 270,834 exposed</div></div>
+          <div class="kpi neg"><div class="kpi-label">Visa — inc. volume</div><div class="kpi-value neg">-11</div><div class="kpi-sub">incremental orders</div></div>
+          <div class="kpi pos"><div class="kpi-label">Visa — inc. new Cx</div><div class="kpi-value pos">+52</div><div class="kpi-sub">only positive signal</div></div>
         </div>
       </div>
-
-      <!-- XKX -->
       <div>
         <div style="font-size:11px;font-weight:600;color:var(--xkx);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;padding-bottom:4px;border-bottom:2px solid var(--xkx)">Kosovo (XKX)</div>
         <div style="display:grid;gap:8px">
-          <div class="kpi pos">
-            <div class="kpi-label">Visa — inc. GOV</div>
-            <div class="kpi-value pos">+€2,680</div>
-            <div class="kpi-sub">In campaign · 153,917 exposed</div>
-          </div>
-          <div class="kpi pos">
-            <div class="kpi-label">Spar — inc. GOV</div>
-            <div class="kpi-value pos">+€2,056</div>
-            <div class="kpi-sub">In campaign · 17,640 exposed</div>
-          </div>
-          <div class="kpi pos">
-            <div class="kpi-label">Gjilan — inc. GOV</div>
-            <div class="kpi-value pos">+€1,073</div>
-            <div class="kpi-sub">Post 28d · 1,261 exposed</div>
-          </div>
+          <div class="kpi pos"><div class="kpi-label">Visa — inc. GOV</div><div class="kpi-value pos">+€2,680</div><div class="kpi-sub">In campaign · 153,917 exposed</div></div>
+          <div class="kpi pos"><div class="kpi-label">Spar — inc. GOV</div><div class="kpi-value pos">+€2,056</div><div class="kpi-sub">In campaign · 17,640 exposed</div></div>
+          <div class="kpi pos"><div class="kpi-label">Gjilan — inc. GOV</div><div class="kpi-value pos">+€1,073</div><div class="kpi-sub">Post 28d · 1,261 exposed</div></div>
         </div>
       </div>
-
     </div>
   </section>
 
   <hr class="divider">
 
-  <!-- CHART -->
   <section>
     <div class="section-label">Incremental GOV by campaign</div>
     <div class="chart-block">
       <div class="chart-title">Incremental GOV (€) — included campaigns, Jul 6 2026</div>
       <div class="chart-desc">Visa XKX, Spar XKX and Gjilan are the positive contributors. Visa ALB is the only negative campaign included this week.</div>
-      <div class="chart-wrap" style="height:240px">
-        <canvas id="govChart"></canvas>
-      </div>
+      <div class="chart-wrap" style="height:240px"><canvas id="govChart"></canvas></div>
     </div>
   </section>
 
@@ -244,40 +208,16 @@
       <span class="dot" style="background:var(--alb);width:12px;height:12px"></span>
       <span class="country-title alb">Albania (ALB)</span>
     </div>
-
     <div class="campaign-card negative">
       <div class="camp-header">
-        <div>
-          <div class="camp-name">Visa campaign — ALB</div>
-          <div class="camp-meta">270,834 exposed users · In campaign · Post 7d pending</div>
-        </div>
+        <div><div class="camp-name">Visa campaign — ALB</div><div class="camp-meta">270,834 exposed users · In campaign · Post 7d pending</div></div>
         <span class="flag-tag flag-neg">Negative in-campaign</span>
       </div>
       <div class="metrics-row">
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. GOV</div>
-          <div class="metric-box-value neg">-€2,433</div>
-          <div class="metric-box-period">In campaign</div>
-          <div class="metric-box-note">Likely impacted by in-app send running in parallel — not trackable incrementally</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. volume</div>
-          <div class="metric-box-value neg">-11</div>
-          <div class="metric-box-period">In campaign</div>
-          <div class="metric-box-note">Marginal order loss — cannibalisation from in-app channel</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. active users</div>
-          <div class="metric-box-value neg">-85</div>
-          <div class="metric-box-period">In campaign</div>
-          <div class="metric-box-note">Existing users slightly displaced during campaign window</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. new Cx</div>
-          <div class="metric-box-value pos">+52</div>
-          <div class="metric-box-period">In campaign</div>
-          <div class="metric-box-note">New Cx likely driven by email — the only trackable channel. In-app conversions from existing users are not measurable, masking the full picture.</div>
-        </div>
+        <div class="metric-box"><div class="metric-box-label">Inc. GOV</div><div class="metric-box-value neg">-€2,433</div><div class="metric-box-period">In campaign</div><div class="metric-box-note">Likely impacted by in-app send running in parallel — not trackable incrementally</div></div>
+        <div class="metric-box"><div class="metric-box-label">Inc. volume</div><div class="metric-box-value neg">-11</div><div class="metric-box-period">In campaign</div><div class="metric-box-note">Marginal order loss — cannibalisation from in-app channel</div></div>
+        <div class="metric-box"><div class="metric-box-label">Inc. active users</div><div class="metric-box-value neg">-85</div><div class="metric-box-period">In campaign</div><div class="metric-box-note">Existing users slightly displaced during campaign window</div></div>
+        <div class="metric-box"><div class="metric-box-label">Inc. new Cx</div><div class="metric-box-value pos">+52</div><div class="metric-box-period">In campaign</div><div class="metric-box-note">New Cx likely driven by email — the only trackable channel. In-app conversions from existing users are not measurable, masking the full picture.</div></div>
       </div>
     </div>
   </section>
@@ -288,112 +228,40 @@
       <span class="dot" style="background:var(--xkx);width:12px;height:12px"></span>
       <span class="country-title xkx">Kosovo (XKX)</span>
     </div>
-
     <div class="campaign-card positive">
       <div class="camp-header">
-        <div>
-          <div class="camp-name">Visa campaign — XKX</div>
-          <div class="camp-meta">153,917 exposed users · In campaign · Post 7d pending</div>
-        </div>
+        <div><div class="camp-name">Visa campaign — XKX</div><div class="camp-meta">153,917 exposed users · In campaign · Post 7d pending</div></div>
         <span class="flag-tag flag-pos">Positive in-campaign</span>
       </div>
       <div class="metrics-row">
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. GOV</div>
-          <div class="metric-box-value pos">+€2,680</div>
-          <div class="metric-box-period">In campaign</div>
-          <div class="metric-box-note">Strong result — campaign generated real incremental revenue above organic baseline</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. volume</div>
-          <div class="metric-box-value pos">+573</div>
-          <div class="metric-box-period">In campaign</div>
-          <div class="metric-box-note">High order uplift — CRM drove meaningful additional transactions</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. active users</div>
-          <div class="metric-box-value pos">+457</div>
-          <div class="metric-box-period">In campaign</div>
-          <div class="metric-box-note">Campaign reactivated a significant number of users who wouldn't have ordered otherwise</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. new Cx</div>
-          <div class="metric-box-value neg">-114</div>
-          <div class="metric-box-period">In campaign</div>
-          <div class="metric-box-note">CRM reached users before organic conversion — campaign pulled forward new Cx who would have converted anyway, showing as negative incrementality.</div>
-        </div>
+        <div class="metric-box"><div class="metric-box-label">Inc. GOV</div><div class="metric-box-value pos">+€2,680</div><div class="metric-box-period">In campaign</div><div class="metric-box-note">Strong result — campaign generated real incremental revenue above organic baseline</div></div>
+        <div class="metric-box"><div class="metric-box-label">Inc. volume</div><div class="metric-box-value pos">+573</div><div class="metric-box-period">In campaign</div><div class="metric-box-note">High order uplift — CRM drove meaningful additional transactions</div></div>
+        <div class="metric-box"><div class="metric-box-label">Inc. active users</div><div class="metric-box-value pos">+457</div><div class="metric-box-period">In campaign</div><div class="metric-box-note">Campaign reactivated a significant number of users who wouldn't have ordered otherwise</div></div>
+        <div class="metric-box"><div class="metric-box-label">Inc. new Cx</div><div class="metric-box-value neg">-114</div><div class="metric-box-period">In campaign</div><div class="metric-box-note">CRM reached users before organic conversion — campaign pulled forward new Cx who would have converted anyway, showing as negative incrementality.</div></div>
       </div>
     </div>
-
     <div class="campaign-card positive">
       <div class="camp-header">
-        <div>
-          <div class="camp-name">Spar engagement push — XKX</div>
-          <div class="camp-meta">17,640 exposed users · In campaign · Post 7d pending</div>
-        </div>
+        <div><div class="camp-name">Spar engagement push — XKX</div><div class="camp-meta">17,640 exposed users · In campaign · Post 7d pending</div></div>
         <span class="flag-tag flag-pos">Positive — highest GOV per user</span>
       </div>
       <div class="metrics-row">
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. GOV</div>
-          <div class="metric-box-value pos">+€2,056</div>
-          <div class="metric-box-period">In campaign</div>
-          <div class="metric-box-note">Highest GOV per exposed user this week — very efficient push campaign</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. volume</div>
-          <div class="metric-box-value pos">+181</div>
-          <div class="metric-box-period">In campaign</div>
-          <div class="metric-box-note">Strong order uplift from a small audience — high conversion rate</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. active users</div>
-          <div class="metric-box-value pos">+141</div>
-          <div class="metric-box-period">In campaign</div>
-          <div class="metric-box-note">Push notification effectively reactivated dormant or low-frequency users</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. new Cx</div>
-          <div class="metric-box-value neu">0</div>
-          <div class="metric-box-period">In campaign</div>
-          <div class="metric-box-note">Targeted non-grocery users but no net new Cx acquired — likely converting users already close to organic conversion</div>
-        </div>
+        <div class="metric-box"><div class="metric-box-label">Inc. GOV</div><div class="metric-box-value pos">+€2,056</div><div class="metric-box-period">In campaign</div><div class="metric-box-note">Highest GOV per exposed user this week — very efficient push campaign</div></div>
+        <div class="metric-box"><div class="metric-box-label">Inc. volume</div><div class="metric-box-value pos">+181</div><div class="metric-box-period">In campaign</div><div class="metric-box-note">Strong order uplift from a small audience — high conversion rate</div></div>
+        <div class="metric-box"><div class="metric-box-label">Inc. active users</div><div class="metric-box-value pos">+141</div><div class="metric-box-period">In campaign</div><div class="metric-box-note">Push notification effectively reactivated dormant or low-frequency users</div></div>
+        <div class="metric-box"><div class="metric-box-label">Inc. new Cx</div><div class="metric-box-value neu">0</div><div class="metric-box-period">In campaign</div><div class="metric-box-note">Targeted non-grocery users but no net new Cx acquired — likely converting users already close to organic conversion</div></div>
       </div>
     </div>
-
     <div class="campaign-card positive">
       <div class="camp-header">
-        <div>
-          <div class="camp-name">Gjilan city launch — XKX</div>
-          <div class="camp-meta">1,261 exposed users · Post 28 days</div>
-        </div>
+        <div><div class="camp-name">Gjilan city launch — XKX</div><div class="camp-meta">1,261 exposed users · Post 28 days</div></div>
         <span class="flag-tag flag-pos">Positive — sustained</span>
       </div>
       <div class="metrics-row">
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. GOV</div>
-          <div class="metric-box-value pos">+€1,073</div>
-          <div class="metric-box-period">Post 28 days</div>
-          <div class="metric-box-note">Sustained GOV 28 days post-launch — city launch impact holding strong</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. volume</div>
-          <div class="metric-box-value pos">+53</div>
-          <div class="metric-box-period">Post 28 days</div>
-          <div class="metric-box-note">Orders still being driven 4 weeks after the push — strong retention signal</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. active users</div>
-          <div class="metric-box-value pos">+6</div>
-          <div class="metric-box-period">Post 28 days</div>
-          <div class="metric-box-note">Small but positive — a handful of users remain incrementally active vs control</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-box-label">Inc. new Cx</div>
-          <div class="metric-box-value neg">-16</div>
-          <div class="metric-box-period">Post 28 days</div>
-          <div class="metric-box-note">Slight negative at post-28d — new Cx acquisition was stronger at launch, now normalising</div>
-        </div>
+        <div class="metric-box"><div class="metric-box-label">Inc. GOV</div><div class="metric-box-value pos">+€1,073</div><div class="metric-box-period">Post 28 days</div><div class="metric-box-note">Sustained GOV 28 days post-launch — city launch impact holding strong</div></div>
+        <div class="metric-box"><div class="metric-box-label">Inc. volume</div><div class="metric-box-value pos">+53</div><div class="metric-box-period">Post 28 days</div><div class="metric-box-note">Orders still being driven 4 weeks after the push — strong retention signal</div></div>
+        <div class="metric-box"><div class="metric-box-label">Inc. active users</div><div class="metric-box-value pos">+6</div><div class="metric-box-period">Post 28 days</div><div class="metric-box-note">Small but positive — a handful of users remain incrementally active vs control</div></div>
+        <div class="metric-box"><div class="metric-box-label">Inc. new Cx</div><div class="metric-box-value neg">-16</div><div class="metric-box-period">Post 28 days</div><div class="metric-box-note">Slight negative at post-28d — new Cx acquisition was stronger at launch, now normalising</div></div>
       </div>
     </div>
   </section>
@@ -411,7 +279,6 @@ const govValues = [-2433.02, 2680.27, 2055.57, 1073.16];
 const colors = govValues.map(v => v >= 0 ? '#0ca30c33' : '#e3494833');
 const borders = govValues.map(v => v >= 0 ? '#0ca30c' : '#e34948');
 const grid = '#e8e7e4', muted = '#898781';
-
 new Chart(document.getElementById('govChart'), {
   type: 'bar',
   data: { labels, datasets: [{ label: 'Incremental GOV (€)', data: govValues, backgroundColor: colors, borderColor: borders, borderWidth: 1, borderRadius: 3 }] },
