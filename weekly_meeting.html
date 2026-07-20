@@ -636,33 +636,45 @@ function renderHistory() {
 }
 
 // ─── Calendar ─────────────────────────────────────────────────────────────────
-const CAL_SHEET_ID = '1ADY2-cCMYYPEr5QW3MFBsAzRZW-4ZGHxJBCvugEAyJo';
+const CAL_SHEETS = {
+  ALB: '1ADY2-cCMYYPEr5QW3MFBsAzRZW-4ZGHxJBCvugEAyJo',
+  XKX: '1-UKzXAIwzRxKqcQeae8jP0ABPDPmHj5Q1djVvaW_jNI'
+};
+const CAL_SHEET_NAME = 'Campaign Overview';
 let calCampaigns = [];
 let calWeekOffset = 0;
 let calCountryFilter = 'all';
 let calLoaded = false;
+
+async function fetchSheetData(sheetId, country) {
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(CAL_SHEET_NAME)}`;
+  const res = await fetch(url);
+  const text = await res.text();
+  const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/)[1]);
+  const rows = json.table.rows;
+  const cols = json.table.cols.map(c => c.label);
+  return rows.map(row => {
+    const obj = { Country: country };
+    cols.forEach((col, i) => { obj[col] = row.c[i] ? (row.c[i].f || row.c[i].v || '') : ''; });
+    return obj;
+  }).filter(r => r['Campaign Name'] && r['Campaign Date']);
+}
 
 async function loadCalendar() {
   if (calLoaded) { renderCalendar(); return; }
   document.getElementById('cal-loading').classList.remove('hidden');
   document.getElementById('cal-content').classList.add('hidden');
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${CAL_SHEET_ID}/gviz/tq?tqx=out:json`;
-    const res = await fetch(url);
-    const text = await res.text();
-    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/)[1]);
-    const rows = json.table.rows;
-    const cols = json.table.cols.map(c => c.label);
-    calCampaigns = rows.map(row => {
-      const obj = {};
-      cols.forEach((col, i) => { obj[col] = row.c[i] ? (row.c[i].f || row.c[i].v || '') : ''; });
-      return obj;
-    }).filter(r => r['Campaign Name'] || r['Campaign Date']);
+    const [albData, xkxData] = await Promise.all([
+      fetchSheetData(CAL_SHEETS.ALB, 'ALB'),
+      fetchSheetData(CAL_SHEETS.XKX, 'XKX')
+    ]);
+    calCampaigns = [...albData, ...xkxData];
     calLoaded = true;
     document.getElementById('cal-loading').classList.add('hidden');
     document.getElementById('cal-content').classList.remove('hidden');
   } catch(e) {
-    document.getElementById('cal-loading').textContent = '⚠ Could not load campaigns. Make sure the Google Sheet is shared publicly.';
+    document.getElementById('cal-loading').textContent = '⚠ Could not load campaigns. Make sure both Google Sheets are shared publicly (Anyone with link → Viewer).';
     return;
   }
   renderCalendar();
@@ -697,12 +709,12 @@ function renderCalendar() {
     if (!d) return false;
     return d >= monday && d <= sunday;
   });
-  if (calCountryFilter === 'alb') filtered = filtered.filter(c => !String(c['Country']||'').toUpperCase().includes('XKX'));
-  if (calCountryFilter === 'xkx') filtered = filtered.filter(c => String(c['Country']||'').toUpperCase().includes('XKX'));
+  if (calCountryFilter === 'alb') filtered = filtered.filter(c => c['Country'] === 'ALB');
+  if (calCountryFilter === 'xkx') filtered = filtered.filter(c => c['Country'] === 'XKX');
   const content = document.getElementById('cal-content');
   if (!filtered.length) { content.innerHTML = `<div class="cal-empty">No campaigns found for this week.</div>`; return; }
-  const alb = filtered.filter(c => !String(c['Country']||'').toUpperCase().includes('XKX'));
-  const xkx = filtered.filter(c => String(c['Country']||'').toUpperCase().includes('XKX'));
+  const alb = filtered.filter(c => c['Country'] === 'ALB');
+  const xkx = filtered.filter(c => c['Country'] === 'XKX');
   let html = '';
   if (calCountryFilter !== 'xkx' && alb.length) {
     html += `<div class="cal-country-block"><div class="cal-country-hdr alb">🇦🇱 Albania (ALB) — ${alb.length} campaign${alb.length!==1?'s':''}</div>${alb.map(c => renderCampaignRow(c)).join('')}</div>`;
@@ -716,8 +728,8 @@ function renderCalendar() {
 
 function renderCampaignRow(c) {
   const status = String(c['Status']||'planned').toLowerCase();
-  const statusClass = status.includes('complet') ? 'completed' : status.includes('live') ? 'live' : 'planned';
-  const statusLabel = status.includes('complet') ? 'Completed' : status.includes('live') ? 'Live' : 'Planned';
+  const statusClass = status.includes('complet') ? 'completed' : status.includes('launch') || status.includes('live') ? 'live' : status.includes('cancel') ? 'completed' : 'planned';
+  const statusLabel = status.includes('complet') ? 'Completed' : status.includes('launch') || status.includes('live') ? 'Live' : status.includes('cancel') ? 'Cancelled' : 'Planned';
   const channels = String(c['Channel Type']||'').split(',').map(ch => {
     ch = ch.trim().toLowerCase();
     if (ch.includes('email')) return '📧 Email';
@@ -727,16 +739,20 @@ function renderCampaignRow(c) {
   }).filter(Boolean).join(' · ');
   const date = parseCalDate(c['Campaign Date']);
   const dateStr = date ? date.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
-  const desc = c['Intro/ Short Description'] || c['Description'] || '';
+  const desc = c['Intro/ Short Description'] || '';
+  const category = c['Campaign Category'] || '';
+  const audience = c['Target Audience'] || '';
+  const city = c['City'] || '';
+
   return `<div class="cal-campaign ${statusClass}">
     <div class="cal-date">${dateStr}</div>
     <div class="cal-body">
       <div class="cal-name">${c['Campaign Name']||'—'}</div>
       <div class="cal-meta">
-        ${c['City'] ? `<span class="cal-tag">📍 ${c['City']}</span>` : ''}
-        ${c['Category'] ? `<span class="cal-tag">${c['Category']}</span>` : ''}
+        ${city ? `<span class="cal-tag">📍 ${city}</span>` : ''}
+        ${category ? `<span class="cal-tag">${category}</span>` : ''}
         ${channels ? `<span class="cal-tag">${channels}</span>` : ''}
-        ${c['Target Audience'] ? `<span class="cal-tag">👥 ${c['Target Audience']}</span>` : ''}
+        ${audience ? `<span class="cal-tag">👥 ${audience}</span>` : ''}
         <span class="cal-status ${statusClass}">${statusLabel}</span>
       </div>
       ${desc ? `<div style="font-size:12px;color:var(--text-3);margin-top:4px">${desc}</div>` : ''}
@@ -747,12 +763,17 @@ function renderCampaignRow(c) {
 function parseCalDate(val) {
   if (!val) return null;
   const s = String(val);
+  // DD/MM/YYYY or DD/MM/YY
   const parts = s.split('/');
   if (parts.length === 3) {
     let year = parseInt(parts[2]);
     if (year < 100) year += 2000;
     return new Date(year, parseInt(parts[1])-1, parseInt(parts[0]));
   }
+  // Date(year,month,day) format from Google Sheets gviz
+  const gviz = s.match(/Date\((\d+),(\d+),(\d+)\)/);
+  if (gviz) return new Date(parseInt(gviz[1]), parseInt(gviz[2]), parseInt(gviz[3]));
+  // ISO or standard
   const d = new Date(s);
   return isNaN(d) ? null : d;
 }
