@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -337,8 +338,16 @@
 
 <div class="save-bar">
   <div class="save-bar-left">Weekly CRM Performance Update · ALB & XKX</div>
-  <div style="display:flex;align-items:center;gap:12px">
+  <div style="display:flex;align-items:center;gap:8px">
     <span class="save-status" id="save-status"></span>
+    <div style="position:relative">
+      <button class="btn btn-secondary btn-small" onclick="document.getElementById('export-menu').classList.toggle('hidden')">Export ↑</button>
+      <div id="export-menu" class="hidden" style="position:absolute;bottom:36px;right:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius);padding:6px;min-width:160px;box-shadow:0 4px 16px rgba(0,0,0,0.1);z-index:200">
+        <button onclick="exportLink();document.getElementById('export-menu').classList.add('hidden')" style="width:100%;text-align:left;padding:7px 10px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);border-radius:4px">🔗 Share as link</button>
+        <button onclick="exportText();document.getElementById('export-menu').classList.add('hidden')" style="width:100%;text-align:left;padding:7px 10px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);border-radius:4px">📋 Copy as text</button>
+        <button onclick="exportPDF();document.getElementById('export-menu').classList.add('hidden')" style="width:100%;text-align:left;padding:7px 10px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);border-radius:4px">📄 Save as PDF</button>
+      </div>
+    </div>
     <button class="btn btn-secondary btn-small" onclick="clearWeek()">Clear week</button>
     <button class="btn btn-primary" onclick="saveWeek()">Save week</button>
   </div>
@@ -748,7 +757,116 @@ function parseCalDate(val) {
   return isNaN(d) ? null : d;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Export ───────────────────────────────────────────────────────────────────
+function getWeekData() {
+  const week = document.getElementById('weekDate').value || currentWeek;
+  return { week, data: weeks[week] || {}, actions: actionItems.filter(a => a.week === week) };
+}
+
+function exportLink() {
+  const { week, data, actions } = getWeekData();
+  const payload = { week, ...data, actions };
+  const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
+  const url = `${window.location.origin}${window.location.pathname}?share=${encoded}`;
+  navigator.clipboard.writeText(url).then(() => {
+    showStatus('Link copied to clipboard!', true);
+    setTimeout(() => showStatus('', false), 3000);
+  }).catch(() => {
+    prompt('Copy this link:', url);
+  });
+}
+
+function exportText() {
+  const { week, data, actions } = getWeekData();
+  let text = `CRM WEEKLY UPDATE — Week of ${formatDate(week)}\n`;
+  text += `${'─'.repeat(50)}\n\n`;
+  if (data.highlights?.length) {
+    text += `✅ HIGHLIGHTS\n`;
+    data.highlights.forEach(h => text += `• ${h}\n`);
+    text += '\n';
+  }
+  if (data.lowlights?.length) {
+    text += `⚠ LOWLIGHTS\n`;
+    data.lowlights.forEach(l => text += `• ${l}\n`);
+    text += '\n';
+  }
+  if (data.plan?.length) {
+    text += `📋 NEXT WEEK PLAN\n`;
+    data.plan.forEach(p => text += `• ${p}\n`);
+    text += '\n';
+  }
+  if (actions.length) {
+    text += `🎯 ACTION ITEMS\n`;
+    actions.forEach(a => text += `[${a.status === 'closed' ? '✓' : ' '}] ${a.text}${a.owner ? ` (${a.owner})` : ''}${a.due ? ` — due ${formatDate(a.due)}` : ''}\n`);
+  }
+  navigator.clipboard.writeText(text).then(() => {
+    showStatus('Copied to clipboard!', true);
+    setTimeout(() => showStatus('', false), 3000);
+  }).catch(() => {
+    prompt('Copy this text:', text);
+  });
+}
+
+function exportPDF() {
+  const { week, data, actions } = getWeekData();
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <!DOCTYPE html><html><head>
+    <title>CRM Weekly Update — ${formatDate(week)}</title>
+    <style>
+      body { font-family: -apple-system, sans-serif; max-width: 700px; margin: 40px auto; color: #0b0b0b; font-size: 14px; line-height: 1.6; }
+      h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+      .sub { font-size: 12px; color: #898781; margin-bottom: 32px; }
+      h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #898781; margin: 24px 0 8px; }
+      ul { padding-left: 18px; margin: 0; }
+      li { margin-bottom: 4px; }
+      .action { display: flex; gap: 8px; margin-bottom: 6px; align-items: flex-start; }
+      .check { width: 14px; height: 14px; border: 1.5px solid #ccc; border-radius: 3px; flex-shrink: 0; margin-top: 2px; }
+      .check.done { background: #0ca30c; border-color: #0ca30c; }
+      .action-text.done { text-decoration: line-through; color: #898781; }
+      .meta { font-size: 11px; color: #898781; margin-top: 1px; }
+      hr { border: none; border-top: 1px solid #e8e7e4; margin: 24px 0; }
+      @media print { body { margin: 20px; } }
+    </style></head><body>
+    <h1>CRM Weekly Update</h1>
+    <div class="sub">Week of ${formatDate(week)} · ALB & XKX</div>
+    ${data.highlights?.length ? `<h2>✅ Highlights</h2><ul>${data.highlights.map(h => `<li>${h}</li>`).join('')}</ul>` : ''}
+    ${data.lowlights?.length ? `<h2>⚠ Lowlights</h2><ul>${data.lowlights.map(l => `<li>${l}</li>`).join('')}</ul>` : ''}
+    ${data.plan?.length ? `<h2>📋 Next week plan</h2><ul>${data.plan.map(p => `<li>${p}</li>`).join('')}</ul>` : ''}
+    ${actions.length ? `<hr><h2>🎯 Action items</h2>${actions.map(a => `
+      <div class="action">
+        <div class="check ${a.status === 'closed' ? 'done' : ''}"></div>
+        <div>
+          <div class="action-text ${a.status === 'closed' ? 'done' : ''}">${a.text}</div>
+          <div class="meta">${[a.owner ? `👤 ${a.owner}` : '', a.due ? `📅 ${formatDate(a.due)}` : '', a.status].filter(Boolean).join(' · ')}</div>
+        </div>
+      </div>`).join('')}` : ''}
+    <script>window.onload = () => window.print();<\/script>
+    </body></html>`);
+  win.document.close();
+}
+
+// Load shared data from URL if present
+window.addEventListener('load', () => {
+  const params = new URLSearchParams(window.location.search);
+  const share = params.get('share');
+  if (share) {
+    try {
+      const payload = JSON.parse(decodeURIComponent(atob(share)));
+      const { week, highlights, lowlights, plan, actions } = payload;
+      if (week) {
+        document.getElementById('weekDate').value = week;
+        document.getElementById('highlights-list').innerHTML = '';
+        document.getElementById('lowlights-list').innerHTML = '';
+        document.getElementById('plan-list').innerHTML = '';
+        (highlights || []).forEach(h => addHL('highlight', h));
+        (lowlights || []).forEach(l => addHL('lowlight', l));
+        (plan || []).forEach(p => addPlan(p));
+        showStatus('Viewing shared week of ' + formatDate(week), true);
+      }
+    } catch(e) {}
+  }
+});
 function showStatus(msg, success) {
   const el = document.getElementById('save-status');
   el.textContent = msg;
